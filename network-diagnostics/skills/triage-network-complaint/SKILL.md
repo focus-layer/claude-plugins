@@ -249,6 +249,13 @@ suspect:
   `as_of` (RFC3339) makes this a **diff**: the path now vs the path when things
   worked. An extender whose backhaul flipped wired→wireless, or a device that
   moved to a different switch port, shows up here and nowhere else.
+
+  **When the complaint is that a device *went offline*, `as_of` is not a
+  refinement — it is required.** The graph closes a device's edges once it stops
+  being observed, so an offline device returns `found: false` at "now" no matter
+  how it was wired. Pin the onset `T` first (`device_presence_history`), then ask
+  as of `T − 15 min`. Treating the "now" answer as the finding reports the
+  outage's *consequence* as if it were its cause.
 - **"This device keeps going offline / drops intermittently" (a named device):**
   call `device_presence_history` with the device's `device_id` over the complaint
   window. It returns the device's **state-transition timeline** (online ⇄ sleep ⇄

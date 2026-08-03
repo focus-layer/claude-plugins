@@ -428,9 +428,18 @@ source. The full recipe is in the `when-did-this-start` reference (fetch via the
    `probe_id` / `dhcp_server`, never `device_id`** — querying by the device's id
    returns empty and misreads as "down". See the reference doc.
 
+   **If the subject is offline right now, pass `as_of=<T − 15 min>` to this
+   call.** The graph closes a device's edges once it stops being observed, so an
+   offline device has no open edges and the call returns `found: false` at "now"
+   — an artifact of asking about a moment after the device was already gone, not
+   a fact about its wiring. The time-traveled read is the *only* way to get the
+   dependency set for an offline subject. Use a generous ~15 min, not seconds:
+   edges close on the resolver's schedule, not at the instant of the drop.
+
    If `topology_path` reports `found: false`, read its `status`/`reason` — an
    `UNPLACED` device with `ARP_NO_MATCH` is itself a finding — then fall back to
-   the hand-assembled set above.
+   the hand-assembled set above. But when the subject is offline, **re-ask as of
+   `T − 15 min` before treating `found: false` as a finding at all.**
 3. **Sweep a tight window around `T`** (typically `T ± 15 min`). Call
    `network_issues` over `[T − w, T + w]` and read events by `probeType`:
    `pt_dhcp` (config change / rogue server — a DHCP change on the gateway just

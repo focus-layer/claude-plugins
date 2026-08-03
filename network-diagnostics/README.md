@@ -130,5 +130,5 @@ make publish-plugin                              # push the payload to the publi
 
 `make publish-plugin` stamps the monorepo version into `plugin.json` /
 `marketplace.json` and pushes the skills + manifests to
-`sprinter-tech/network-diagnostics-plugin-claude`. Reference docs are served by
+`sprinter-tech/claude-plugins`. Reference docs are served by
 the Sprinter MCP server (not shipped in the payload).
