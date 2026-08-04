@@ -26,6 +26,7 @@ allowed-tools: >
   mcp__sprinter__device_presence_history,
   mcp__sprinter__timeseries_instant,
   mcp__sprinter__timeseries_range,
+  mcp__sprinter__timeseries_analyze,
   mcp__sprinter__network_issues,
   mcp__sprinter__event_evidence,
   mcp__sprinter__network_http,
@@ -305,7 +306,11 @@ most recent — and most relevant — data.
 - **Signal:** `timeseries_instant` on `sprinter_wifi_client_signal_dbm{device_id="<id>"}`
   for the current RSSI (and to fix "now"); `timeseries_range` with
   `avg_over_time(...[1h])` for the trend. (Platforms that report only bars have no
-  dBm series — fall back to the evidence `signalBars` and say so.)
+  dBm series — fall back to the evidence `signalBars` and say so.) For "did the
+  signal STEP down, and when?" use `timeseries_analyze` instead of eyeballing the
+  range: same query pinned to the one client, `direction: decrease_bad` — a
+  returned `mean_shift` issue carries the step's timestamp and before/after
+  segment means (for retries/deauth rates, `direction: increase_bad`).
 - **Retries:** the live retry signal is a **rate**, not the frozen
   `txRetriesRatio`. Where the platform reports `wifi_client_tx_retries_total`
   (UniFi), query `rate(...[15m])`. Where it reports per-client error counters
@@ -554,9 +559,10 @@ fix is different. Full recipe: fetch `when-did-this-start` with the
 `get_reference_doc` MCP tool (`name: when-did-this-start`). Wi-Fi-specific
 short form:
 
-1. **Pin the onset `T`** from Step 1c's roam/disassoc clustering (or the VM
-   signal/retry inflection from 1b) — when did the bouncing / sticky pattern
-   begin?
+1. **Pin the onset `T`** from Step 1c's roam/disassoc clustering — or from a
+   `timeseries_analyze` `mean_shift` on the 1b signal/retry series: its start
+   timestamp IS the inflection, already computed. When did the bouncing /
+   sticky pattern begin?
 2. **Sweep the client's Wi-Fi dependencies around `T`** (`T ± 15 min`), NOT every
    device on the network:
    - **The serving AP** (`anchorDeviceId`) and any roam-candidate AP — run
