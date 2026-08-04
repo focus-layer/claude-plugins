@@ -39,7 +39,9 @@ allowed-tools: >
   mcp__sprinter__show_probes,
   mcp__sprinter__timeseries_instant,
   mcp__sprinter__timeseries_range,
+  mcp__sprinter__timeseries_analyze,
   mcp__sprinter__network_issues,
+  mcp__sprinter__event_evidence,
   mcp__sprinter__issue_chart,
   mcp__sprinter__network_info,
   mcp__sprinter__isp_info,
@@ -255,7 +257,12 @@ the device's state *right now* — it disconnects and reconnects, goes offline o
 a schedule, "worked this morning then stopped", or (Wi-Fi) keeps bouncing
 between access points — call **`device_presence_history`** with the resolved
 `device_id`. `network_ping` only tells you up-or-down *now*; this tool returns
-the device's **state-transition timeline** so you can see the pattern. It reads
+the device's **state-transition timeline** so you can see the pattern. **This is
+also the authoritative answer to "when was this device last online"** — the
+device-state service exists for that question. Read the last `-> offline`
+transition; fall back to a metric's last-data-point timestamp only when
+presence history has no data for the device (and then present it as a lower
+bound, not the verdict). It reads
 from the device-state reducer's history stream (presence transitions) plus the
 Wi-Fi event stream (roam / disassoc), so a single call answers "when did it go
 offline, how often, and was it a Wi-Fi roam or a true drop?":
@@ -290,7 +297,29 @@ offline, how often, and was it a Wi-Fi roam or a true drop?":
 - `list_devices` → all known devices on the network
 - `show_probes` → list active probes and their targets for a network/agent
 - `network_issues` → check for recent performance issues (outlier clusters,
-  mean/variance shifts) that may correlate with the device problem
+  mean shifts) that may correlate with the device problem
+- `event_evidence` → drill into a flagged issue's supporting evidence
+  (per-event evidence blocks, per-metric baselines). Inputs come from the
+  `network_issues` response: `analysis_run_id` at the top level, event IDs
+  inside each issue. Cheap — the analysis is already cached. If it reports the
+  run expired, call `network_issues` again for a fresh `analysis_run_id`.
+
+**Prefer computed issues over raw series for anomaly questions.** For any
+metric a predefined probe collects (ping loss/RTT, DNS, HTTP, IRTT, DHCP —
+`probeType` `pt_ping`/`pt_multi_ping`/`pt_dns`/`pt_http`/`pt_irtt`/`pt_dhcp`),
+"did it step up/down", "were there outliers", and "what is normal" are answered
+by `network_issues` with catalog-tuned thresholds — each issue carries
+`baseline_mean`/`baseline_p95` (outlier clusters) or
+`segment_before_mean`/`segment_after_mean`/`ratio_mean_vs_baseline` (mean
+shifts). Do not recompute those from `timeseries_range` by eye. For metrics the
+pipeline does NOT analyze (interface counters, Wi-Fi gauges, scripted metrics),
+the same questions go to **`timeseries_analyze`**: one PromQL series in,
+computed changepoints/outlier clusters + baseline statistics out. It requires
+`direction` (which way is bad for the metric) and needs the query pinned to
+exactly one series. Raw `timeseries_range` remains for "show me the shape" and
+`timeseries_instant` for "what is the value right now". Check `truncated`
+in the `network_issues` response before saying "there were N issues" — the
+tool caps at 50.
 
 **HTTP probing tips.** Many devices have embedded web servers with status
 pages, configuration panels, and API endpoints. Use `network_http`

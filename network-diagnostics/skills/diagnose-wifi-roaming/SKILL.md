@@ -27,6 +27,7 @@ allowed-tools: >
   mcp__sprinter__timeseries_instant,
   mcp__sprinter__timeseries_range,
   mcp__sprinter__network_issues,
+  mcp__sprinter__event_evidence,
   mcp__sprinter__network_http,
   mcp__sprinter__network_ping
 ---

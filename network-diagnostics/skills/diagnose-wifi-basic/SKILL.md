@@ -19,6 +19,10 @@ allowed-tools: >
   mcp__sprinter__find_device,
   mcp__sprinter__timeseries_instant,
   mcp__sprinter__timeseries_range,
+  mcp__sprinter__timeseries_analyze,
+  mcp__sprinter__network_issues,
+  mcp__sprinter__event_evidence,
+  mcp__sprinter__device_presence_history,
   mcp__sprinter__network_http,
   mcp__sprinter__network_ping
 ---
@@ -76,18 +80,26 @@ must use the right one for the right job:
 >   metric). Never read one and present it as current, and do NOT use it as the
 >   fallback when VM looks empty.** It looks like a live reading and is not; that
 >   is exactly what misleads.
+> - **"When was this device last online?" has ONE authoritative answer:
+>   `device_presence_history`.** The device-state service was built for exactly
+>   this question — a state machine over ping replies and Wi-Fi association
+>   freshness, with debounce and ghost-association guards. Call it with the
+>   `device_id` and read the last `-> offline` transition (and its reason).
+>   Do NOT answer "last online" from a metric's last data point when presence
+>   history is available: a metric's last sample is when *a producer stopped
+>   reporting*, which can lead or lag the real state flip — for a Wi-Fi client
+>   it can reflect the AP's reporting, not the device.
 > - **If VM has no *recent* points, do not give up and do not fall back to the
 >   snapshot value — query VM for the LATEST available points** (a wide
 >   `timeseries_range`, or `timeseries_instant` which returns the last sample).
->   For an **offline** device this is the most useful thing you have: the last
->   point's **value** is the last real measured health, and its **timestamp**
->   tells you roughly *when the device dropped off the air*. That beats the
->   snapshot on both counts.
+>   For an **offline** device the last point's **value** is the last real
+>   measured health — presence history tells you *when* it went offline, but
+>   only VM tells you what the link looked like on its way down. Use the last
+>   point's timestamp as the "last online" estimate only when presence history
+>   has no data for the device; it is a lower bound, not the verdict.
 > - **The snapshot's one genuine use for liveness is as a *bracket*, not an
 >   answer.** `observedAt` is a time the device *definitely was* associated — a
->   **lower bound** on "last online", not necessarily the last time it was online
->   (it may have stayed up afterward). VM's last point is the better estimate of
->   when it actually went quiet. Use the snapshot timestamp only to bound, never
+>   **lower bound** on "last online" for the no-presence-data case. Never use
 >   its frozen health numbers to diagnose.
 
 The interpretation reference is `interpreting-wifi-telemetry` — especially that
@@ -236,6 +248,24 @@ If "trans_errors climbing 0.06 → 1.1 /s over the evening" is read across a 2 h
 hole, say so explicitly — the endpoints are real but the slope between them is
 unobserved. State the gap; do not launder missing data into a clean monotonic
 story.
+
+**Network context.** Wi-Fi gauges are NOT analyzed by Sprinter's issue pipeline
+— `network_issues` returns no per-client Wi-Fi verdicts, so do not call it
+expecting one. Call it for the *network's* computed context over the same
+window: a ping-loss cluster or RTT mean shift co-timed with the client's bad
+period points the diagnosis at the network, not the link. Drill into a flagged
+issue's evidence with `event_evidence` (`analysis_run_id` + event IDs from the
+`network_issues` response).
+
+**For a Wi-Fi gauge itself, `timeseries_analyze` IS the anomaly detector.**
+"Did the signal step down?", "are there retry spikes?", "what is this client's
+normal RSSI?" — same PromQL as the range query but the server runs
+changepoint/outlier detection and returns computed issues plus baseline stats.
+Pin the query to one client (`{device_id="<id>"}`), `rate()` counters first,
+and set `direction` from the reference's deterioration column: `decrease_bad`
+for signal/SNR/PHY rate, `increase_bad` for retries/deauth/errors. A
+`mean_shift` issue's start timestamp is the onset of the change — feed it
+straight into Step 4.5-style "what happened around then" correlation.
 
 ### Step 4 — Optional live symptom
 

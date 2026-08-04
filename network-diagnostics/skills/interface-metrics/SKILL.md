@@ -17,7 +17,10 @@ allowed-tools: >
   mcp__sprinter__find_device,
   mcp__sprinter__show_device,
   mcp__sprinter__timeseries_range,
+  mcp__sprinter__timeseries_analyze,
   mcp__sprinter__timeseries_instant,
+  mcp__sprinter__network_issues,
+  mcp__sprinter__event_evidence,
   mcp__sprinter__snmp_get,
   mcp__sprinter__get_reference_doc,
   mcp__sprinter__ask_user
@@ -106,6 +109,30 @@ Use `timeseries_instant` for a single current value (e.g. "what's the link
 speed right now"); use `timeseries_range` for trends and rates over a window.
 Pick `start`/`end`/`step` to fit the question — last hour at 5m for a spot
 check, last 24h at 30m–1h for "has this been erroring all day".
+
+**For "did this step up / are there spikes / what is normal", use
+`timeseries_analyze` instead of eyeballing the raw series.** Same PromQL input
+(pin the query to ONE series — one device, one `if_index`; counters wrapped in
+`rate()`), but the server runs real changepoint/outlier detection and returns
+computed issues plus baseline statistics (mean/median/P95/robust stddev).
+`direction` is required — `increase_bad` for errors/discards/traffic anomalies.
+Pass `sensitivity: high` to surface weaker anomalies, `low` for only strong
+ones. An empty issues list with the baseline block is a real answer: nothing
+anomalous, and here is the interface's normal range. On long windows the tool
+may ask you to widen `step` — do that rather than shrinking the window. Its
+severity scores come from a simpler `adhoc-v1` scorer and are not comparable
+to `network_issues` severities.
+
+**Network context: what else was flagged in this window?** Interface metrics are
+NOT analyzed by Sprinter's issue pipeline — `network_issues` will never return a
+per-interface verdict, so do not call it expecting one. What it DOES give you is
+the network's computed context around the same window: ping-loss outlier
+clusters, RTT mean shifts, DHCP/traceroute events — each with baseline fields
+(`baseline_mean`, `baseline_p95`) already computed. When interface errors line
+up in time with a flagged network issue, that correlation localizes the fault
+faster than more counters. Drill into a flagged issue's supporting evidence with
+`event_evidence` (its `analysis_run_id` + event IDs come from the
+`network_issues` response).
 
 ### Device-level health (same tools, no `if_index`)
 

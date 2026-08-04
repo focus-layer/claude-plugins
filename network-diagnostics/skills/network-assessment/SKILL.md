@@ -16,8 +16,7 @@ allowed-tools: >
   mcp__sprinter__find_network,
   mcp__sprinter__show_probes,
   mcp__sprinter__network_issues,
-  mcp__sprinter__network_benchmarks,
-  mcp__sprinter__analytics_report,
+  mcp__sprinter__event_evidence,
   mcp__sprinter__network_ping,
   mcp__sprinter__network_traceroute,
   mcp__sprinter__network_dns_lookup,
@@ -82,36 +81,30 @@ Once you have a `network_id`:
 
 ## Step 2: Gather Performance Data
 
-Use these tools to build a picture of network quality. Start with the
-analytics report for a comprehensive view, then drill into specifics.
+**`network_issues` is the primary assessment tool here.** It runs Sprinter's
+issue analysis on demand over a time window (default: last 24h; pass
+`start_unix_ms`/`end_unix_ms` for a longer view) and returns outlier clusters
+(loss/latency spikes), mean shifts (sustained changes), and DHCP/traceroute
+events — each with `severity`/`confidence` scores and catalog-tuned baseline
+fields already computed (`baseline_mean`, `baseline_median`, `baseline_p95`
+for clusters; `segment_before_mean`/`segment_after_mean`/
+`ratio_mean_vs_baseline` for shifts). Those baseline fields ARE the "what is
+normal for this network" answer — do not try to re-derive baselines yourself.
+Check `truncated` in the response before reporting an issue count.
 
-**Comprehensive assessment:**
-- **`analytics_report`** — returns suitability scores (VoIP, gaming,
-  streaming), baseline assessments per probe type (connectivity, jitter,
-  DNS, HTTP, DHCP), and RRUL/speed test benchmark data. This is the
-  primary tool for network quality assessment. Request specific sections
-  to reduce response size:
-  - `sections: ["scores"]` — suitability scores plus underlying
-    benchmarks and baselines
-  - `sections: ["benchmarks"]` — RRUL and speed test results only
-  - `sections: ["baselines"]` — probe baseline assessments only
-
-**Benchmark details:**
-- **`network_benchmarks`** — latest RRUL and speed test results from
-  VictoriaMetrics. Use when you only need throughput, latency, jitter,
-  and MOS numbers without the full report. Defaults to last 7 days.
-
-**Active issues:**
-- **`network_issues`** — on-demand issue detection. Returns outlier
-  clusters (traffic spikes/drops), mean shifts (sustained metric
-  changes), and variance shifts (stability changes). Each issue has a
-  `kind` field you can filter on and `severity`/`confidence` scores.
+- **A clean `network_issues` sweep is a positive finding**: no flagged
+  loss/latency/DNS/DHCP anomalies over the window is the backbone of a "this
+  connection is healthy" verdict.
+- **`event_evidence`** — drill into a flagged issue's supporting evidence
+  (per-event evidence blocks, per-metric baselines) using the response's
+  `analysis_run_id` plus event IDs from inside the issue. Cheap — the analysis
+  is cached. Use it before building the assessment around a single issue.
 
 **Probe inventory:**
 - **`show_probes`** — list all probes running on the network. Useful
   to understand what is being monitored (which DNS servers, ping
   targets, IRTT servers, etc.) and to correlate probe IDs from
-  baselines and issues back to human-readable names and targets.
+  issues back to human-readable names and targets.
 
 ## Step 3: Live Diagnostics (Optional)
 
@@ -124,11 +117,14 @@ specific aspect, run live diagnostic probes:
   or loss occurs
 - **`network_dns_lookup`** — check DNS resolution time and correctness
 - **`network_jitter_test`** — measure current jitter and latency (IRTT)
-- **`network_speed_test`** — run a fresh speed test (takes ~30 seconds)
+- **`network_speed_test`** — run a fresh speed test (takes ~30 seconds).
+  This is also the throughput source for suitability questions ("is this
+  fast enough for 4K streaming?") — there is no stored-benchmark tool, so
+  when the question needs a throughput number, run the test.
 
-Use these sparingly — the baseline data from `analytics_report` already
-covers the historical picture. Live probes are for confirming current
-state or investigating specific targets.
+Use the others sparingly — `network_issues` already covers the historical
+picture for the scheduled probes. Live probes are for confirming current
+state, investigating specific targets, or getting a throughput number.
 
 ## Step 3a: Wi-Fi Is Out of Scope Here — Hand Off
 
@@ -159,16 +155,19 @@ localizes the problem to the air), but the Wi-Fi verdict itself belongs to those
 Structure your assessment around what the user cares about:
 
 **For general "how is my network?" questions:**
-- Overall connection quality (suitability scores)
-- Download/upload speeds (from benchmarks)
-- Latency and jitter characteristics (from RRUL or baselines)
+- Overall connection quality — built from the `network_issues` sweep (clean or
+  flagged) plus the issues' baseline fields (typical loss/RTT for this network)
+- Download/upload speeds (run `network_speed_test` when throughput matters)
+- Latency and jitter characteristics (issue baselines; `network_jitter_test`
+  for a current number)
 - Any active issues detected
 - Comparison to typical requirements (VoIP needs <150ms RTT, <30ms
   jitter; gaming needs <30ms RTT; 4K streaming needs >25 Mbps)
 
 **For specific use-case questions ("can I run video calls?"):**
-- Lead with the relevant suitability score
-- Back it up with the specific metrics that drive the score
+- Grade the measured numbers (baseline RTT/loss from issues, live jitter/speed
+  test) against the requirements table above, and say which numbers drove the
+  verdict
 - Flag any issues that could cause intermittent problems
 
 **For "what's wrong?" questions:**

@@ -30,6 +30,7 @@ allowed-tools: >
   mcp__sprinter__network_arp_table,
   mcp__sprinter__show_probes,
   mcp__sprinter__network_issues,
+  mcp__sprinter__event_evidence,
   mcp__sprinter__ask_user
 ---
 

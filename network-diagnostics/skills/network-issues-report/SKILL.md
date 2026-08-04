@@ -16,6 +16,7 @@ allowed-tools: >
   mcp__sprinter__find_device,
   mcp__sprinter__show_device,
   mcp__sprinter__network_issues,
+  mcp__sprinter__event_evidence,
   mcp__sprinter__show_probes,
   mcp__sprinter__ask_user,
   mcp__sprinter__get_reference_doc,
@@ -606,6 +607,13 @@ The narrative format depends on the issue kind. Issues fall into two
 categories: **timeseries anomalies** (have a `metric` field) and
 **configuration/discovery events** (`metric` is empty, `is_instant` is
 true).
+
+When an issue's `details[]` lacks something the narrative needs (the shape of
+the excursion, per-metric baselines, sample points), call **`event_evidence`**
+with the `analysis_run_id` from the top of the `network_issues` response plus
+the issue's event IDs — it returns the structured evidence blocks behind the
+issue, and the analysis is already cached so the call is cheap. If it reports
+the run expired, re-run `network_issues` for a fresh `analysis_run_id`.
 
 #### Timeseries Anomalies (`outlier_cluster`, `mean_shift`, `variance_shift`)
 

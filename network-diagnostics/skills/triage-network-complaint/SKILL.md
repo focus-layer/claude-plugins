@@ -19,6 +19,7 @@ allowed-tools: >
   mcp__sprinter__show_device,
   mcp__sprinter__device_presence_history,
   mcp__sprinter__network_issues,
+  mcp__sprinter__event_evidence,
   mcp__sprinter__issue_chart,
   mcp__sprinter__network_tech_stack,
   mcp__sprinter__topology_path,
@@ -226,9 +227,15 @@ suspect:
     complaint that turns out to be "the agent is offline" or "DHCP is
     misconfigured" is caught here, cheaply, up front.
 - **What has Sprinter already flagged?** `network_issues` over the complaint
-  window (loss/RTT/variance shifts, DNS/DHCP/HTTP probe issues). This is the
-  highest-signal first look. Use `issue_chart` to see a flagged metric over
-  time.
+  window (loss/RTT shifts, outlier clusters, DNS/DHCP/HTTP probe issues). This
+  is the highest-signal first look — for any metric a predefined probe collects
+  (`pt_ping`/`pt_multi_ping`/`pt_dns`/`pt_http`/`pt_irtt`/`pt_dhcp`), prefer
+  these computed issues over eyeballing `timeseries_range`: each carries
+  catalog-tuned baselines (`baseline_mean`, `baseline_p95`,
+  `segment_before_mean`/`segment_after_mean`). Check `truncated` before
+  reporting a count. Use `issue_chart` to see a flagged metric over time, and
+  `event_evidence` (with the response's `analysis_run_id` + an issue's event
+  IDs) to pull the evidence behind a flagged issue before dispatching on it.
 - **The egress path (when a device is named) — the layer map itself.** Call
   `topology_path(network_id=<net>, from_device=<device_id>, to="internet")`. It
   returns the device's actual route out: device → serving AP / switch → gateway
@@ -456,7 +463,10 @@ Read-only, on tools already listed above. Full recipe: fetch via
    the complaint window — the first `online -> offline` flap or clustered
    `roamed`/`disassociated` is the onset (an `online -> sleep -> online` cycle is
    healthy power-save, not an onset). For a network-wide complaint, the earliest
-   significant `network_issues` `startTime` is the onset.
+   significant `network_issues` `startTime` is the onset — a `mean_shift`
+   issue's start *is* a computed inflection point, so prefer it over eyeballing
+   `timeseries_range` for any predefined-probe metric (the reference doc has the
+   raw-metric fallback recipe for everything else).
 2. **Sweep a tight window around `T`** (`T ± 15 min`) with `network_issues`,
    reading events by `probeType`: **`pt_dhcp`** (a config change / rogue server
    on the gateway at ≈ `T` explains "lost connection" / "weird IP" for the whole
