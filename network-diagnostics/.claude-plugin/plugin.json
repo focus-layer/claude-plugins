@@ -1,9 +1,9 @@
 {
   "name": "network-diagnostics",
-  "version": "2.7.1659",
-  "description": "Network device identification and diagnostics using Sprinter MCP tools",
+  "version": "2.7.1705",
+  "description": "Network device identification and diagnostics using Focus Layer MCP tools",
   "author": {
-    "name": "Sprinter Tech",
+    "name": "Focus Layer",
     "url": "https://github.com/sprinter-tech"
   },
   "repository": "https://github.com/sprinter-tech/claude-plugins",
@@ -15,6 +15,6 @@
     "diagnostics",
     "troubleshoot",
     "debug",
-    "sprinter"
+    "focus-layer"
   ]
 }

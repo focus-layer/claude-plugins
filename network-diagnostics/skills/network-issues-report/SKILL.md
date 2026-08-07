@@ -28,7 +28,7 @@ allowed-tools: >
 > **Output discipline.** Investigate quietly. Do NOT narrate your process to the
 > user — no "let me…", no "now I'll…", no announcing which tools you are loading
 > or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Sprinter
+> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
 > supports several platforms…"). Call tools without describing the act of calling
 > them. Surface only what matters to the user: the findings, the supporting
 > evidence, and the verdict/next step. Keep any interim text minimal.
@@ -37,7 +37,7 @@ Generate a network issues report for $ARGUMENTS
 
 ## Scope
 
-This report covers **network-level anomalies** detected by Sprinter's analytics
+This report covers **network-level anomalies** detected by Focus Layer's analytics
 (loss / latency / variance shifts from probes), DHCP config changes, and the
 health of the **WAN link itself** — the cable, fiber, cellular, or Starlink
 satellite connection the network reaches the internet through (Step 5b).
@@ -54,12 +54,12 @@ quality. Do not mix them in one verdict.
 
 ## MCP Server Availability — Check First
 
-Before starting, verify that the Sprinter MCP tools (`mcp__sprinter__*`) are
+Before starting, verify that the Focus Layer MCP tools (`mcp__sprinter__*`) are
 available. If any MCP tool call fails with a connection error, authentication
 error, or "server disconnected" message, **stop immediately** and tell the
 user:
 
-> I cannot proceed because the Sprinter MCP server is unavailable
+> I cannot proceed because the Focus Layer MCP server is unavailable
 > (connection failed / requires re-authentication). Please reconnect the
 > MCP server and try again.
 
@@ -290,7 +290,7 @@ melting down, a duplex mismatch — shows up as WAN loss from the agent's vantag
 **even though the cause is inside the building.** Reporting it as a "one-off WAN
 event" then misses the real, recurring problem.
 
-**First, check whether Sprinter already answered this.** The multi-ping fleet probe
+**First, check whether Focus Layer already answered this.** The multi-ping fleet probe
 (`pt_multi_ping`) pings every device on the network and the insights pipeline
 correlates the result: a **`lan_wide_connectivity_loss`** issue in your Step 5 fetch
 IS the LAN-vs-WAN verdict, already computed (see its narration section below). If one
@@ -695,7 +695,7 @@ Present as:
 This is the **highest-value connectivity verdict the report can carry**, and it is
 the automated answer to "was the loss internal or upstream?" — the question Step 5b
 otherwise makes you derive by hand. `probeType = pt_multi_ping`, `metric` empty, and
-it is an **interval** issue (a real `start`/`end`, not an instant): Sprinter pings
+it is an **interval** issue (a real `start`/`end`, not an instant): Focus Layer pings
 *every* device on the network from the agent, and this issue fires when a large
 fraction of the fleet went lossy **in the same window**. Simultaneous loss across
 many internal devices is the signature of an **internal** fault — a broadcast/
@@ -733,7 +733,7 @@ network-scoped with no single metric series to plot.
 
 **Beyond these three events, the DHCP server has a health/performance axis.** The
 events above are config-drift and rogue-appeared detections; they say nothing about
-whether the server is *answering* or *how fast*. Sprinter runs an active DORA probe
+whether the server is *answering* or *how fast*. Focus Layer runs an active DORA probe
 that emits `sprinter_dhcp_*` metrics (DORA timing, ack/offer/timeout/nack counters,
 `num_responses`). If a `dhcp_*` event fired — or a client-connectivity complaint
 points at DHCP — confirm the live state with those metrics: `show_probes` for the

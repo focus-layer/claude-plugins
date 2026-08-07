@@ -2,7 +2,7 @@
 name: diagnose-wifi-roaming
 description: >
   Diagnose a Wi-Fi client's link quality and sticky-client / roaming problems,
-  read-only, from live WiFi metrics, the persisted topology graph, and Sprinter's
+  read-only, from live WiFi metrics, the persisted topology graph, and Focus Layer's
   stored WiFi evidence (with a narrow live controller-API fallback). The
   link-quality verdict works on any supported WiFi
   platform; the deeper roaming/mesh/min-RSSI analysis is UniFi-controller-specific
@@ -38,7 +38,7 @@ allowed-tools: >
 > **Output discipline.** Investigate quietly. Do NOT narrate your process to the
 > user — no "let me…", no "now I'll…", no announcing which tools you are loading
 > or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Sprinter
+> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
 > supports several platforms…"). Call tools without describing the act of calling
 > them. Surface only what matters to the user: the findings, the supporting
 > evidence, and the verdict/next step. Keep any interim text minimal.
@@ -62,7 +62,7 @@ the skill branches by platform. Three data sources, each for a different job:
   — which matters, because that inference demonstrably lies on sites with
   third-party switches (see the topology trap in Step 2a).
 - **The per-AP radios and the AP fleet roster come from evidence**
-  (`show_device` `wifiSnapshots.controllerSummary`). Sprinter's infra service
+  (`show_device` `wifiSnapshots.controllerSummary`). Focus Layer's infra service
   persists it on the discovery cadence; it is structural, so its staleness is
   fine. **Do not read the client's health *values* from evidence** — those
   scalars are frozen at the discovery cadence (a day old on real networks); read
@@ -332,7 +332,7 @@ result carefully:
   the last measured health and its timestamp dates when the link went quiet —
   both more useful than the frozen scalar.
 - **Truly no series at all** for a client you confirmed is *associated* (Step 1a):
-  the MAC → `device_id` resolution failed (the client MAC is not yet a Sprinter
+  the MAC → `device_id` resolution failed (the client MAC is not yet a Focus Layer
   device). Only here are you reduced to the evidence `signalDbm` / `txRetriesRatio`
   — label it a stale snapshot value, not current health.
 

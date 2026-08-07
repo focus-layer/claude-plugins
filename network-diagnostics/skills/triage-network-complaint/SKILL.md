@@ -42,7 +42,7 @@ allowed-tools: >
 > **Output discipline.** Investigate quietly. Do NOT narrate your process to the
 > user — no "let me…", no "now I'll…", no announcing which tools you are loading
 > or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Sprinter
+> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
 > supports several platforms…"). Call tools without describing the act of calling
 > them. Surface only what matters to the user: the findings, the supporting
 > evidence, and the verdict/next step. Keep any interim text minimal.
@@ -124,11 +124,11 @@ argument.
 
 ## Step 1.5 — Coverage gate + ask, don't guess
 
-Before you localize, answer one question about **yourself**: *can Sprinter
+Before you localize, answer one question about **yourself**: *can Focus Layer
 actually observe the path the user is complaining about?* The scratch-real
 failure this skill exists to prevent was diagnosing a **Wi-Fi client's**
 intermittent failure from a **wired agent** on a **Google Nest** network — a path
-that is **structurally invisible** to Sprinter here — and then inventing an
+that is **structurally invisible** to Focus Layer here — and then inventing an
 "IPv6 cold-start" root cause from a stuck ping value measured on the wrong side of
 the link. Do the coverage check *first*, so a blind spot is named as a blind spot
 and not filled with a guess.
@@ -170,7 +170,7 @@ next step. Rules for the question:
   *how often*, *all sites or only some*, *one device or several*, *always after
   sleep/reconnect*, *does a wired device on the same network have the problem
   too*. The last one is gold on a blind Wi-Fi network — a wired device that is
-  clean while the Mac fails localizes to Wi-Fi without any Sprinter Wi-Fi
+  clean while the Mac fails localizes to Wi-Fi without any Focus Layer Wi-Fi
   telemetry at all.
 - **One question, not an interrogation.** This is triage, not a form. If the first
   answer resolves the ambiguity, proceed; only ask a second if it still changes
@@ -180,7 +180,7 @@ next step. Rules for the question:
 close honestly.** Do not emit a ranked shortlist of causes you cannot tell apart.
 Instead:
 
-1. **Name the blind spot and why it exists** — "Sprinter can't see the Wi-Fi path
+1. **Name the blind spot and why it exists** — "Focus Layer can't see the Wi-Fi path
    on this network: the only agent is wired to the router, and Google Nest reports
    no per-client Wi-Fi telemetry, so no probe I can run touches the failing link."
 2. **State the positive findings you CAN stand behind** — the layers you *did*
@@ -220,13 +220,13 @@ suspect:
     cannot tell you** (e.g. Google Wifi exposes no client roster, so wireless-vs-
     wired and AP association are unknowable). Read those notes before concluding
     anything is broken: an empty WiFi column is often a **structural platform
-    limit**, not a fault or a Sprinter bug — say so instead of chasing it.
+    limit**, not a fault or a Focus Layer bug — say so instead of chasing it.
   - `show_network` — the **operational state** the tech stack does not carry:
     DHCP servers + config, the **agent roster with live online status** (is the
     network even being observed right now?), LAN addressing, and subnets. A
     complaint that turns out to be "the agent is offline" or "DHCP is
     misconfigured" is caught here, cheaply, up front.
-- **What has Sprinter already flagged?** `network_issues` over the complaint
+- **What has Focus Layer already flagged?** `network_issues` over the complaint
   window (loss/RTT shifts, outlier clusters, DNS/DHCP/HTTP probe issues). This
   is the highest-signal first look — for any metric a predefined probe collects
   (`pt_ping`/`pt_multi_ping`/`pt_dns`/`pt_http`/`pt_irtt`/`pt_dhcp`), prefer
@@ -281,7 +281,7 @@ suspect:
   the fault was. The agent reaches the internet through the LAN, so an internal
   fault — a broadcast/multicast storm, a switching loop, a gateway melting down —
   shows up as internet loss from the agent's vantage while the cause is inside the
-  building. Sprinter pings **every device on the network** from the agent (the
+  building. Focus Layer pings **every device on the network** from the agent (the
   multi-ping fleet probe, `pt_multi_ping`) and the insights pipeline correlates it:
   when a large fraction of the fleet is lossy in the same window it fires a
   **`lan_wide_connectivity_loss`** issue (`probeType = pt_multi_ping`). If your
@@ -340,7 +340,7 @@ suspect:
 - **DHCP server health (when the complaint is "can't connect" / "no IP" /
   "connects then drops"):** a client that cannot get or renew a lease looks
   exactly like a dead network, but the WAN and Wi-Fi links can be perfectly
-  healthy. Sprinter runs an active DORA probe, so this is a direct read, not an
+  healthy. Focus Layer runs an active DORA probe, so this is a direct read, not an
   inference. Get the DHCP probe's `probe_id` from `show_probes(network_id=<net>)`
   (the `pt_dhcp` probe), fetch `get_reference_doc(name: "dhcp-metrics-reference")`,
   and grade its metrics with `timeseries_instant` / `timeseries_range`. The three
@@ -381,7 +381,7 @@ suspect:
   (BGW320 gateway) is **sparse** (no per-client SNR/retries — only signal +
   deauth/disassoc). Missing SNR/retries on a BGW320 is **expected, not a
   fault** — do not read a sparse snapshot as a problem. `wired: true` means
-  Ethernet behind an AP — rule Wi-Fi out. This is Sprinter's own evidence,
+  Ethernet behind an AP — rule Wi-Fi out. This is Focus Layer's own evidence,
   polled from the controller about every minute (`observedAt` 1–2 min stale is
   fine); this snapshot read is a **routing signal only** — the authoritative
   live-VM read and catalog-band grading happen in `diagnose-wifi-basic`, so no
@@ -502,7 +502,7 @@ starts from it.
   from a point that can *see* the failing path. A wired-agent probe is silent on a
   Wi-Fi client's link; a stuck value identical across runs is an artifact. If your
   only numbers come from the wrong vantage, you have no evidence — say so.
-- **A blind spot is a finding, not a failure.** "Sprinter cannot observe this path
+- **A blind spot is a finding, not a failure.** "Focus Layer cannot observe this path
   from here (why), but these layers are clean, and here's how to catch it" is a
   legitimate and *complete* answer. Prefer it over any root cause you cannot
   measure. Never publish a ranked list of indistinguishable causes as if it were a

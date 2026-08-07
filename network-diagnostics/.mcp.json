@@ -2,7 +2,7 @@
   "mcpServers": {
     "sprinter": {
       "type": "http",
-      "url": "https://prod-us-west-1.sprinter-tech.net/mcp/jsonrpc"
+      "url": "https://prod-us-west-1.focus-layer.com/mcp/jsonrpc"
     }
   }
 }

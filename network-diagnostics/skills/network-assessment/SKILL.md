@@ -29,7 +29,7 @@ allowed-tools: >
 > **Output discipline.** Investigate quietly. Do NOT narrate your process to the
 > user — no "let me…", no "now I'll…", no announcing which tools you are loading
 > or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Sprinter
+> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
 > supports several platforms…"). Call tools without describing the act of calling
 > them. Surface only what matters to the user: the findings, the supporting
 > evidence, and the verdict/next step. Keep any interim text minimal.
@@ -38,12 +38,12 @@ Assess network $ARGUMENTS
 
 ## MCP Server Availability — Check First
 
-Before starting, verify that the Sprinter MCP tools (`mcp__sprinter__*`) are
+Before starting, verify that the Focus Layer MCP tools (`mcp__sprinter__*`) are
 available. If any MCP tool call fails with a connection error, authentication
 error, or "server disconnected" message, **stop immediately** and tell the
 user:
 
-> I cannot proceed because the Sprinter MCP server is unavailable
+> I cannot proceed because the Focus Layer MCP server is unavailable
 > (connection failed / requires re-authentication). Please reconnect the
 > MCP server and try again.
 
@@ -81,7 +81,7 @@ Once you have a `network_id`:
 
 ## Step 2: Gather Performance Data
 
-**`network_issues` is the primary assessment tool here.** It runs Sprinter's
+**`network_issues` is the primary assessment tool here.** It runs Focus Layer's
 issue analysis on demand over a time window (default: last 24h; pass
 `start_unix_ms`/`end_unix_ms` for a longer view) and returns outlier clusters
 (loss/latency spikes), mean shifts (sustained changes), and DHCP/traceroute

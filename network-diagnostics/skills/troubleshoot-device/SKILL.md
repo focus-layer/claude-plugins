@@ -53,7 +53,7 @@ allowed-tools: >
 > **Output discipline.** Investigate quietly. Do NOT narrate your process to the
 > user — no "let me…", no "now I'll…", no announcing which tools you are loading
 > or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Sprinter
+> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
 > supports several platforms…"). Call tools without describing the act of calling
 > them. Surface only what matters to the user: the findings, the supporting
 > evidence, and the verdict/next step. Keep any interim text minimal.
@@ -62,12 +62,12 @@ Troubleshoot device $ARGUMENTS
 
 ## MCP Server Availability — Check First
 
-Before starting, verify that the Sprinter MCP tools (`mcp__sprinter__*`) are
+Before starting, verify that the Focus Layer MCP tools (`mcp__sprinter__*`) are
 available. If any MCP tool call fails with a connection error, authentication
 error, or "server disconnected" message, **stop immediately** and tell the
 user:
 
-> I cannot proceed because the Sprinter MCP server is unavailable
+> I cannot proceed because the Focus Layer MCP server is unavailable
 > (connection failed / requires re-authentication). Please reconnect the
 > MCP server and try again.
 
@@ -381,7 +381,7 @@ reference / the no-metrics fallback (which `interface-metrics` handles):
 
 ## Step 4: Where does this device sit in the fabric?
 
-Sprinter persists the network's topology as a graph — which switch port each
+Focus Layer persists the network's topology as a graph — which switch port each
 device is plugged into, which AP each Wi-Fi client is on, how the switches
 interconnect, and how the network egresses to its ISP. Two cheap reads:
 
@@ -446,7 +446,7 @@ source. The full recipe is in the `when-did-this-start` reference (fetch via the
 
    **When the device's symptom is "no IP" / "can't connect" / "connects then
    drops", check DHCP-server health directly** — a client failing to get or renew
-   a lease looks like a dead device while its link is fine. Sprinter runs an active
+   a lease looks like a dead device while its link is fine. Focus Layer runs an active
    DORA probe, so this is a read, not a guess: get the `pt_dhcp` probe's `probe_id`
    from `show_probes(network_id=<net>)`, fetch
    `get_reference_doc(name: "dhcp-metrics-reference")`, and grade with
@@ -489,7 +489,7 @@ source. The full recipe is in the `when-did-this-start` reference (fetch via the
    the loss across LAN targets first.** The agent reaches the internet *through*
    the LAN, so an internal fault (a broadcast/multicast storm, a switching loop, a
    gateway melting down) shows up as internet loss from the agent's vantage even
-   though the cause is inside the building. Sprinter pings **every device on the
+   though the cause is inside the building. Focus Layer pings **every device on the
    network** from the agent (the multi-ping fleet probe), so the evidence to tell
    these apart already exists: over the loss window, query `sprinter_ping_loss_ratio`
    for the LAN infra — the gateway, switches (`device_class="network_switch"`), the

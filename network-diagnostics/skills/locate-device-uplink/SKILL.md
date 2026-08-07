@@ -3,7 +3,7 @@ name: locate-device-uplink
 description: >
   Locate where a device attaches to the network fabric — which switch and
   physical port, or which access point — and grade that attachment. Reads
-  Sprinter's persisted topology graph, which already resolved the attachment
+  Focus Layer's persisted topology graph, which already resolved the attachment
   from LLDP / switch MAC-forwarding-table / Wi-Fi-association evidence and
   recorded how it knows and how confident it is. Use when the user asks "which
   switch port is this device on?", "where is this device plugged in?", "what is
@@ -36,7 +36,7 @@ Locate the uplink for $ARGUMENTS
 > **Output discipline.** Investigate quietly. Do NOT narrate your process to the
 > user — no "let me…", no "now I'll…", no announcing which tools you are loading
 > or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Sprinter
+> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
 > supports several platforms…"). Call tools without describing the act of calling
 > them. Surface only what matters to the user: the findings, the supporting
 > evidence, and the verdict/next step. Keep any interim text minimal.
@@ -49,7 +49,7 @@ wireless one — and **how healthy that attachment is** (link speed, operational
 status, error and discard rates).
 
 **The attachment comes from the topology graph, not from a live SNMP walk.**
-Sprinter's topology resolver continuously reads switch LLDP neighbor tables and
+Focus Layer's topology resolver continuously reads switch LLDP neighbor tables and
 MAC-forwarding tables (FDB), plus Wi-Fi controller association data, and persists
 the resolved attachment as a graph edge — together with **how** it knows
 (`method`) and **how confident** it is (`confidence`). One `topology_neighbors`
@@ -69,10 +69,10 @@ topology-graph-reference`): how to read the graph output, the full `method` /
 
 ## MCP Server Availability — Check First
 
-Before starting, verify the Sprinter MCP tools (`mcp__sprinter__*`) are
+Before starting, verify the Focus Layer MCP tools (`mcp__sprinter__*`) are
 available. If any call fails with a connection, authentication, or
 "server disconnected" error, **stop immediately** and tell the user the
-Sprinter MCP server is unavailable and must be reconnected. Do not work around a
+Focus Layer MCP server is unavailable and must be reconnected. Do not work around a
 failed MCP connection by guessing or using placeholder data.
 
 ## Step 0 — Resolve the network and the target
@@ -293,7 +293,7 @@ equivalent of this: the switch only knows *now*.
 
 ## Seeing the whole picture in the UI
 
-The same graph this skill reads is rendered network-wide in the Sprinter web UI
+The same graph this skill reads is rendered network-wide in the Focus Layer web UI
 under a network's **Topology** tab: an interactive view of devices, their
 switch/AP attachments, and the gateway→ISP uplink, with each device colored by
 presence. When a user wants to *see* where a device sits in the fabric (rather

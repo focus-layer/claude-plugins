@@ -29,7 +29,7 @@ allowed-tools: >
 > **Output discipline.** Investigate quietly. Do NOT narrate your process to the
 > user — no "let me…", no "now I'll…", no announcing which tools you are loading
 > or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Sprinter
+> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
 > supports several platforms…"). Call tools without describing the act of calling
 > them. Surface only what matters to the user: the findings, the supporting
 > evidence, and the verdict/next step. Keep any interim text minimal.
@@ -39,12 +39,12 @@ Read interface metrics for $ARGUMENTS
 ## What this skill does
 
 Read per-interface and device-level health for an SNMP-monitored device
-(switch, router, AP, gateway) from Sprinter's **stored time-series metrics** in
+(switch, router, AP, gateway) from Focus Layer's **stored time-series metrics** in
 VictoriaMetrics — traffic, speed, errors, discards, link state, and device
 CPU/memory/uptime. This is the universal "is this interface/device healthy?"
 step.
 
-**Read metrics, do not run live SNMP for this.** Sprinter already polls these
+**Read metrics, do not run live SNMP for this.** Focus Layer already polls these
 counters (~60s cadence) and stores them as Prometheus-style series. Querying the
 stored series gives a real **rate over a window**; reading a raw SNMP counter
 gives a cumulative-since-boot number you cannot interpret without a second
@@ -67,7 +67,7 @@ grade its wired uplink port; the wireless side is the WiFi skill's.
 ## MCP Server Availability — Check First
 
 If any `mcp__sprinter__*` call fails with a connection / auth / "server
-disconnected" error, stop and tell the user the Sprinter MCP server is
+disconnected" error, stop and tell the user the Focus Layer MCP server is
 unavailable and must be reconnected. Do not work around it with guesses.
 
 ## Step 1 — Identify the device and interface
@@ -124,7 +124,7 @@ severity scores come from a simpler `adhoc-v1` scorer and are not comparable
 to `network_issues` severities.
 
 **Network context: what else was flagged in this window?** Interface metrics are
-NOT analyzed by Sprinter's issue pipeline — `network_issues` will never return a
+NOT analyzed by Focus Layer's issue pipeline — `network_issues` will never return a
 per-interface verdict, so do not call it expecting one. What it DOES give you is
 the network's computed context around the same window: ping-loss outlier
 clusters, RTT mean shifts, DHCP/traceroute events — each with baseline fields

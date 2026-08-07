@@ -1,7 +1,7 @@
-# Sprinter Claude Plugins
+# Focus Layer Claude Plugins
 
 A [Claude plugin marketplace](https://docs.claude.com/en/docs/claude-code/plugins)
-published by [Sprinter Tech](https://github.com/sprinter-tech). Add it once and
+published by [Focus Layer](https://github.com/sprinter-tech). Add it once and
 install any plugin below into **Claude Code** or **Claude Desktop**; installed
 plugins auto-update from the marketplace at startup.
 
@@ -25,7 +25,7 @@ plugins auto-update from the marketplace at startup.
 
 `network-diagnostics` provides read-only investigation skills — Wi-Fi link
 health, device/printer triage, switch-port location, and network issue reports —
-backed by Sprinter MCP tools. See its own [`README.md`](./network-diagnostics/)
+backed by Focus Layer MCP tools. See its own [`README.md`](./network-diagnostics/)
 for full details; each plugin documents itself in its subdirectory.
 
 ## Layout
@@ -44,5 +44,5 @@ claude-plugins/
 ```
 
 The published tree is generated from the
-[Sprinter monorepo](https://github.com/sprinter-tech) (`plugins/`) by its
+[Focus Layer monorepo](https://github.com/sprinter-tech) (`plugins/`) by its
 `make publish-plugin` target — edit there, not here.

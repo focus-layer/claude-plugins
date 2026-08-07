@@ -32,7 +32,7 @@ allowed-tools: >
 > **Output discipline.** Investigate quietly. Do NOT narrate your process to the
 > user — no "let me…", no "now I'll…", no announcing which tools you are loading
 > or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Sprinter
+> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
 > supports several platforms…"). Call tools without describing the act of calling
 > them. Surface only what matters to the user: the findings, the supporting
 > evidence, and the verdict/next step. Keep any interim text minimal.
@@ -46,7 +46,7 @@ complaint is localized to a Wi-Fi client.
 
 ## Where the data lives — three tiers
 
-Sprinter's infra service polls the network's WiFi controller (~every minute). The
+Focus Layer's infra service polls the network's WiFi controller (~every minute). The
 same per-client readings land in **two** places on **two clocks**, and the skill
 must use the right one for the right job:
 
@@ -133,7 +133,7 @@ problem. This one read prevents the classic misdiagnosis of chasing data the
 platform never exposes (e.g. Google Wifi's absent client roster).
 
 If the `device_id` is **empty** (the client MAC has not yet been promoted to a
-Sprinter device — common for a brand-new or randomized-MAC client), the
+Focus Layer device — common for a brand-new or randomized-MAC client), the
 by-`device_id` VM query in Step 3 will return nothing **for that reason**, not
 because the link is quiet. This is the **one** case where VM genuinely has no
 series to query at all — distinct from an *offline* device, whose series exists
@@ -173,9 +173,9 @@ a true stop.
 >   only after wake-from-sleep / not sure), *all sites or only some*, *one device
 >   or several*, and especially **does a wired device on the same network hit the
 >   problem too** — a clean wired device while the Mac fails localizes to Wi-Fi
->   with zero Sprinter Wi-Fi telemetry.
+>   with zero Focus Layer Wi-Fi telemetry.
 > - **Report the blind spot honestly and hand over client-side capture steps.**
->   Name why Sprinter can't see it (wired-only agent, no per-client Nest
+>   Name why Focus Layer can't see it (wired-only agent, no per-client Nest
 >   telemetry), state the layers you *did* clear, and give the user the
 >   run-during-a-failure bisection (`ping` gateway / `ping 8.8.8.8` /
 >   `ping6` internet / `dig`) framed as "here's how to catch it," not a root cause.
@@ -249,7 +249,7 @@ hole, say so explicitly — the endpoints are real but the slope between them is
 unobserved. State the gap; do not launder missing data into a clean monotonic
 story.
 
-**Network context.** Wi-Fi gauges are NOT analyzed by Sprinter's issue pipeline
+**Network context.** Wi-Fi gauges are NOT analyzed by Focus Layer's issue pipeline
 — `network_issues` returns no per-client Wi-Fi verdicts, so do not call it
 expecting one. Call it for the *network's* computed context over the same
 window: a ping-loss cluster or RTT mean shift co-timed with the client's bad
@@ -373,7 +373,7 @@ Every row now carries `device_name` + `device_address` alongside the value —
 no follow-up calls. The recipe generalizes: wrap any sweep metric (or a
 `rate(...)` of a counter) as the left side, list whatever `deviceInfo` labels you
 want in `group_left(...)`. Note the **empty-`device_id` caveat**: a client whose
-MAC never resolved to a Sprinter device has `device_id=""`, so it won't match
+MAC never resolved to a Focus Layer device has `device_id=""`, so it won't match
 `deviceInfo` and drops from the join — that is correct (it has no name), but if you
 must still see those rows, run the bare sweep (no join) and report them by
 `client_mac`.
@@ -411,7 +411,7 @@ read.
 - Don't claim physical placement or "nearest AP" as fact — it's an RSSI
   inference (and if it becomes central, that's the roaming skill's job).
 - State what you couldn't read, and **why**, distinguishing the empty-VM cases:
-  (a) the client's `device_id` was empty (MAC not yet a Sprinter device), so
+  (a) the client's `device_id` was empty (MAC not yet a Focus Layer device), so
   there is **no series at all** to query — the only case where you fall back to
   structure + a labelled-stale snapshot value; or (b) the `device_id` exists but
   the recent window was empty (device offline) — here you do **not** fall back to
