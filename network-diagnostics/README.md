@@ -17,8 +17,8 @@ new version is published.
 ### Claude Code
 
 ```
-/plugin marketplace add sprinter-tech/claude-plugins
-/plugin install network-diagnostics@sprinter
+/plugin marketplace add focus-layer/claude-plugins
+/plugin install network-diagnostics@focus-layer
 ```
 
 The first command registers the Focus Layer plugin marketplace; the second installs
@@ -30,7 +30,7 @@ so you get new skills without reinstalling.
 1. Open **Settings → Extensions** (the plugins/extensions panel).
 2. Choose **Add marketplace** (or "Add from a repository") and enter the repo:
    ```
-   sprinter-tech/claude-plugins
+   focus-layer/claude-plugins
    ```
 3. From that marketplace, **install** the `network-diagnostics` plugin.
 4. Restart Claude Desktop if prompted. The plugin's skills and its Focus Layer MCP
@@ -130,5 +130,5 @@ make publish-plugin                              # push the payload to the publi
 
 `make publish-plugin` stamps the monorepo version into `plugin.json` /
 `marketplace.json` and pushes the skills + manifests to
-`sprinter-tech/claude-plugins`. Reference docs are served by
+`focus-layer/claude-plugins`. Reference docs are served by
 the Focus Layer MCP server (not shipped in the payload).

@@ -1,12 +1,12 @@
 {
   "name": "network-diagnostics",
-  "version": "2.7.1705",
+  "version": "2.7.1823",
   "description": "Network device identification and diagnostics using Focus Layer MCP tools",
   "author": {
     "name": "Focus Layer",
-    "url": "https://github.com/sprinter-tech"
+    "url": "https://github.com/focus-layer"
   },
-  "repository": "https://github.com/sprinter-tech/claude-plugins",
+  "repository": "https://github.com/focus-layer/claude-plugins",
   "license": "Apache-2.0",
   "keywords": [
     "network",

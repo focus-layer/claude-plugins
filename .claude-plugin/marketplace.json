@@ -1,14 +1,14 @@
 {
-  "name": "sprinter",
+  "name": "focus-layer",
   "owner": {
     "name": "Focus Layer",
-    "url": "https://github.com/sprinter-tech"
+    "url": "https://github.com/focus-layer"
   },
   "plugins": [
     {
       "name": "network-diagnostics",
       "source": "./network-diagnostics",
-      "version": "2.7.1705",
+      "version": "2.7.1823",
       "description": "Network device identification and diagnostics using Focus Layer MCP tools"
     }
   ]

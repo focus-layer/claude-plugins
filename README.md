@@ -10,12 +10,12 @@ plugins auto-update from the marketplace at startup.
 **Claude Code**
 
 ```
-/plugin marketplace add sprinter-tech/claude-plugins
-/plugin install <plugin>@sprinter
+/plugin marketplace add focus-layer/claude-plugins
+/plugin install <plugin>@focus-layer
 ```
 
 **Claude Desktop** — Settings → Extensions → **Add marketplace** → enter
-`sprinter-tech/claude-plugins`, then install a plugin from it.
+`focus-layer/claude-plugins`, then install a plugin from it.
 
 ## Plugins
 
