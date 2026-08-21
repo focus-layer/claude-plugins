@@ -255,6 +255,15 @@ detector happened to notice, and a clean WAN link is what lets you say
    (a `modem`-class hit with `vendor == "Starlink"` is the dish → satellite). A hit
    gives you both the technology and the `device_id` to query. The reference doc
    (next step) spells this out.
+> **Fiber only — margin metrics must be translated before you report them.**
+> Optical issues fire on `optical_*_margin_*_db`, which is `measured − the
+> optic's own alarm threshold`. We grade on it because the fleet spans two PON
+> generations whose optics alarm up to 3 dB apart, so no single absolute band
+> fits both. It is NOT reportable: a subscriber cannot quote "2.1 dB of margin"
+> to an ISP. Invoke the **`interpret-optical-margins`** skill to convert it into
+> "receive power is −26.7 dBm and this ONT alarms at −28.8", which is what the
+> ISP expects. Never put a margin figure in the report body.
+
 3. **`get_reference_doc`** with `name: wan-metrics-reference`. Use **only** the
    section for the technology you resolved. It lists every metric that technology
    emits, its health bands, and the exact PromQL to run.
