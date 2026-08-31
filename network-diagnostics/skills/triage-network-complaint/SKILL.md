@@ -1,12 +1,18 @@
 ---
 name: triage-network-complaint
 description: >
-  Localize a vague network complaint ("internet is slow", "video calls keep
-  freezing", "it works then stops", "pages won't load", "this device keeps
-  going offline") to a layer — ISP/WAN, gateway, DNS, Wi-Fi, or a single device
-  — using cheap broad checks, then dispatch to the right specialist skill. Use
-  this FIRST when a complaint does not already name a specific cause. Read-only:
-  it observes and routes, it does not change anything.
+  Localize a network problem to a layer — ISP/WAN, gateway, DNS, Wi-Fi, or a
+  single device — using cheap broad checks, then dispatch to the right
+  specialist skill. Covers both vague complaints ("internet is slow", "video
+  calls keep freezing", "it works then stops", "pages won't load", "this device
+  keeps going offline") AND a specific already-observed symptom the user wants
+  explained ("there was 100% packet loss around 10:00 today, why?", "the
+  internet dropped for a few minutes this morning", "what caused the outage at
+  <time>?", "why did latency spike last night?"). Use this FIRST whenever the
+  user names a symptom but not its cause — naming a time, a metric, or a
+  network does NOT make a request too specific for triage; localization is
+  still the first move. Read-only: it observes and routes, it does not change
+  anything.
 argument-hint: "[network-id-or-name] [optional: affected device]"
 allowed-tools: >
   Bash, Read, Skill,
@@ -34,10 +40,24 @@ allowed-tools: >
   mcp__sprinter__network_traceroute,
   mcp__sprinter__show_probes,
   mcp__sprinter__timeseries_instant,
-  mcp__sprinter__timeseries_range
+  mcp__sprinter__timeseries_range,
+  mcp__sprinter__timeseries_analyze,
+  mcp__sprinter__traceroute_history
 ---
 
 # Triage a Network Complaint
+
+> **All data comes from `mcp__sprinter__*` tools — nothing else.** Do not shell out
+> to `promql`, `query_graph`/Cypher, `psql`, `logcli`, or `kubectl`. Those reach the
+> cluster's internal datastores, which exist only for an operator inside the network:
+> in a customer's Claude Code, Claude Desktop, or ChatGPT session the command is
+> missing or the host does not resolve, and the session dies holding half a
+> diagnosis. It also passes testing on a developer laptop, so there is no local
+> signal that it broke. `timeseries_range` and `timeseries_instant` accept arbitrary
+> PromQL, and `timeseries_analyze` computes change points, outlier clusters, and
+> baseline stats for one series — between them they cover what a raw VM query would
+> have done. If an MCP tool cannot express what you need, report the gap; do not
+> route around it.
 
 > **Output discipline.** Investigate quietly. Do NOT narrate your process to the
 > user — no "let me…", no "now I'll…", no announcing which tools you are loading
@@ -50,8 +70,18 @@ allowed-tools: >
 Most real complaints are **underspecified**: "is the internet slow today?" can
 mean a download-speed drop, DNS failures, intermittent dead spells, one bad
 device, or an ISP outage. This skill's job is **localization, not deep
-diagnosis** — narrow the vague report to a layer, then hand off. It is
-**read-only**.
+diagnosis** — narrow the report to a layer, then hand off. It is **read-only**.
+
+> **A precise symptom is still a triage job.** "There was 100% packet loss to
+> the internet at 10:00 UTC — why?" names a time, a metric, and a network, and it
+> is tempting to read that as already-localized and jump straight to inspecting
+> the hardware you suspect. It is not localized: it says *that* connectivity
+> broke, never *where*. Every one of ISP outage, modem fault, a flapping router
+> WAN port, a LAN storm, and a dead agent produces exactly that sentence. Run
+> Step 2 in order — issues, then the anchor ladder — before you open any single
+> device. Starting with a device-by-device walk is how a session spends twenty
+> calls arriving at a place two calls would have reached, and it biases the
+> conclusion toward whichever box you happened to look at first.
 
 > **Do not guess to fill a vacuum. This is the single most important rule here.**
 > When the instruments cannot see the failing path, or the broad checks all come
@@ -236,6 +266,66 @@ suspect:
   reporting a count. Use `issue_chart` to see a flagged metric over time, and
   `event_evidence` (with the response's `analysis_run_id` + an issue's event
   IDs) to pull the evidence behind a flagged issue before dispatching on it.
+- **The standing anchor ladder — *where on the path* did it break?** For any
+  connectivity, loss, or "internet was down" complaint this is the cheapest
+  decisive read available, and it comes **before** any interface-by-interface
+  walk. Focus Layer already pings three fixed points from the agent on every
+  network, continuously. Their `target_class` is what names them (get the
+  `probe_id` for each from `show_probes`):
+
+  | Probe                     | `target_class`       | What loss on it proves                     |
+  |---------------------------|----------------------|--------------------------------------------|
+  | `ping_default_gw`         | `tc_default_gateway` | the agent's LAN path to the router          |
+  | `ping_isp_hop_<ip>`       | `tc_first_isp_hop`   | the router's WAN path to the ISP edge       |
+  | `ping_8_8_8_8`            | `tc_google_dns`      | the full path to the public internet        |
+
+  One `timeseries_range` on `sprinter_loss` over the window returns all three at
+  once (they differ only by `probe_id`). Read them **as a pattern** — no single
+  series localizes anything, the *combination* does:
+
+  | gateway | ISP hop | 8.8.8.8 | Verdict                                                     |
+  |---------|---------|---------|-------------------------------------------------------------|
+  | loss    | loss    | loss    | LAN-side: the agent's own link, a switch, or the router itself |
+  | clean   | loss    | loss    | **at or beyond the router's WAN port** — open the WAN bracket below |
+  | clean   | clean   | loss    | beyond the ISP edge — upstream routing/peering; corroborate with `ioda` |
+  | clean   | clean   | clean   | not a connectivity fault — look at DNS, throughput, or the client |
+
+  **Loss on the ISP hop and on 8.8.8.8 starting and ending together is one event,
+  not two.** Traceroute going to `* * *` in the same window is the *same* event
+  seen from the routing plane — do not report it as a separate "route change"
+  finding, and do not let `RouteChangedHops` talk you into one.
+
+  **The ladder brackets the fault; it does not finish the job.** The
+  `clean / loss / loss` row spans **two** hops — router→modem and modem→ISP —
+  because there is no standing anchor on the modem/ONT itself, and on a
+  double-NAT site (consumer router behind an ISP gateway) that gap is where the
+  fault usually is. Resolve inside the bracket, in this order:
+
+  1. **The router's WAN port.** `timeseries_range` on
+     `sprinter_interface_operational_up` for that interface. `oper_up = 0` while
+     `admin_up = 1` is **carrier loss on the router↔modem cable** — the break is
+     inside the building, on a physical link, and nothing upstream can cause it.
+  2. **The routing plane —** `traceroute_history`. Read the STORED traces across
+     the window (`probe_id`/`target` + start/end), or resolve one exactly by
+     passing an `event_evidence` payload's `TracerouteSnapshotId` as
+     `snapshot_id`. **Read the raw `path_hops` lines, not the parsed counts.** An
+     **`!N`** (ICMP network-unreachable) coming from the *local router's own IP*
+     means the router had no default route — the same conclusion as (1), reached
+     independently. A long run of `* * *` before it is ICMP error rate limiting,
+     not extra hops failing. Do NOT use `network_traceroute` here: that runs a
+     fresh live trace and says nothing about a window that has passed.
+  3. **The modem's own WAN telemetry** (`get_reference_doc`,
+     `name: wan-metrics-reference`). If link state held steady with no alarms
+     across the whole window — a fiber ONT still showing the PON link up with
+     unchanged optical RX power, a DOCSIS modem with unchanged lock — then the
+     **modem→ISP segment did not drop**, and the fault was on the router side of
+     the modem.
+
+  **Never report "the ISP link failed" from the ladder alone.** `clean / loss /
+  loss` is equally consistent with a one-minute Ethernet flap on the cable
+  between the router and the modem, and on a site with a customer-owned router
+  that is the more common cause. Name which of the two hops the evidence in
+  1–3 actually indicts, or say that you could not separate them.
 - **The egress path (when a device is named) — the layer map itself.** Call
   `topology_path(network_id=<net>, from_device=<device_id>, to="internet")`. It
   returns the device's actual route out: device → serving AP / switch → gateway
@@ -398,6 +488,9 @@ ask which hop the evidence indicts:
 
 | Signal                                                    | Layer                |
 |-----------------------------------------------------------|----------------------|
+| **Anchors: gw loss + ISP-hop loss + 8.8.8.8 loss**        | **LAN / the router** |
+| **Anchors: gw clean, ISP-hop loss, 8.8.8.8 loss**         | **Router WAN port → modem → ISP** (bracket; resolve per Step 2) |
+| **Anchors: gw clean, ISP-hop clean, 8.8.8.8 loss**        | **Beyond the ISP edge** |
 | `ioda`/`isp_info` shows upstream outage                   | ISP (everyone)       |
 | **A WAN metric grades `poor`** (see below)                | **The WAN link**     |
 | **All WAN metrics `good`** — rules the whole layer OUT    | **Look inward**      |

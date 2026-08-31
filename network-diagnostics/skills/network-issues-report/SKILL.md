@@ -1,11 +1,17 @@
 ---
 name: network-issues-report
 description: >
-  Generate a report of significant network issues (performance degradation,
-  packet loss, latency spikes, mean/variance shifts, DHCP configuration
-  changes, rogue DHCP servers) for a network over a specified time range.
-  Use when the user asks about network problems, instability, outages,
-  incidents, or "what went wrong on this network?"
+  Read what Focus Layer's detectors already flagged for a network over a time
+  range — performance degradation, packet loss, latency spikes, mean/variance
+  shifts, unreachable targets, DHCP configuration changes, rogue DHCP servers —
+  and report it with the evidence behind each. Use when the user asks about
+  network problems, instability, outages, incidents, "what went wrong on this
+  network?", "did anything happen overnight?", "were there any issues in the
+  last N hours?", or asks you to explain a problem they already observed at a
+  known time. Also the FIRST read in any network troubleshooting session: these
+  issues are computed with catalog-tuned baselines and carry start/end
+  timestamps, so they orient the investigation in time before any raw
+  time-series is read.
 argument-hint: "[network-name] [time-range]"
 allowed-tools: >
   Bash, Read, Write, Grep, Glob, WebSearch,
@@ -22,7 +28,9 @@ allowed-tools: >
   mcp__sprinter__get_reference_doc,
   mcp__sprinter__issue_chart,
   mcp__sprinter__timeseries_instant,
-  mcp__sprinter__timeseries_range
+  mcp__sprinter__timeseries_range,
+  mcp__sprinter__timeseries_analyze,
+  mcp__sprinter__traceroute_history
 ---
 
 > **Output discipline.** Investigate quietly. Do NOT narrate your process to the
@@ -34,6 +42,19 @@ allowed-tools: >
 > evidence, and the verdict/next step. Keep any interim text minimal.
 
 Generate a network issues report for $ARGUMENTS
+
+> **All data comes from `mcp__sprinter__*` tools — nothing else.** Do not shell out
+> to `promql`, `query_graph`/Cypher, `psql`, `logcli`, or `kubectl`. Those reach the
+> cluster's internal datastores, which exist only for an operator inside the network:
+> in a customer's Claude Code, Claude Desktop, or ChatGPT session the command is
+> missing or the host does not resolve, and the session dies holding half a
+> diagnosis. It also passes testing on a developer laptop, so there is no local
+> signal that it broke. `timeseries_range` and `timeseries_instant` accept arbitrary
+> PromQL, and `timeseries_analyze` computes change points, outlier clusters, and
+> baseline stats for one series — between them they cover what a raw VM query would
+> have done. If an MCP tool cannot express what you need, report the gap; do not
+> route around it. (The `Bash` in `allowed-tools` is for local date/timezone
+> arithmetic, as used below — not as a database client.)
 
 ## Scope
 
@@ -118,6 +139,7 @@ and
 
 ```bash
 # Get IANA timezone name
+
 if [ -n "$TZ" ]; then echo "$TZ"
 elif [ -f /etc/timezone ]; then cat /etc/timezone
 elif [ -L /etc/localtime ]; then readlink /etc/localtime | sed 's|.*/zoneinfo/||'

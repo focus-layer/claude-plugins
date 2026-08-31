@@ -27,6 +27,7 @@ allowed-tools: >
   mcp__sprinter__network_http,
   mcp__sprinter__network_ping,
   mcp__sprinter__network_traceroute,
+  mcp__sprinter__traceroute_history,
   mcp__sprinter__network_dns_lookup,
   mcp__sprinter__network_jitter_test,
   mcp__sprinter__snmp_get,
@@ -374,10 +375,15 @@ reference / the no-metrics fallback (which `interface-metrics` handles):
 - `1.3.6.1.2.1.4.22` — ipNetToMediaTable: ARP table via SNMP.
 
 *PoE OIDs* — for switches powering APs, cameras, or phones:
-- `1.3.6.1.2.1.105.1.1` — pethMainPseTable: total PoE power budget
-  and consumption per PSE group.
-- `1.3.6.1.2.1.105.1.2` — not available on all devices; for per-port
-  PoE status use `1.3.6.1.2.1.105.1.1` and vendor-specific MIBs.
+- `1.3.6.1.2.1.105.1.1` — pethPsePortTable: **per-port** PoE status.
+  Indexed `<groupIndex>.<portIndex>`. Useful columns: `.6`
+  detection status (3 = deliveringPower), `.12` power-denied counter,
+  `.13` overload counter, `.14` short counter.
+- `1.3.6.1.2.1.105.1.3.1.1` — pethMainPseTable: **per-device** budget.
+  `.2` nominal watts, `.3` oper status (1=on, 2=off, 3=faulty),
+  `.4` consumption watts, `.5` usage-alarm threshold (percent).
+- RFC 3621 defines **no per-port wattage object** — per-port power draw
+  requires a vendor MIB. See `docs/platforms/poe/POWER-ETHERNET-MIB.txt`.
 
 ## Step 4: Where does this device sit in the fabric?
 
@@ -476,8 +482,13 @@ source. The full recipe is in the `when-did-this-start` reference (fetch via the
    upstream), `pt_ping`/`pt_http`/`pt_dns` on the gateway or a shared target
    (infra-wide, not device-local). Also run `device_presence_history` on the
    **serving AP / gateway** themselves — did one transition `offline` at `T`?
-   (DHCP and traceroute have **no** dedicated history tool — their events surface
-   through `network_issues`; do not look for `dhcp_history`/`traceroute_history`.)
+   (DHCP has **no** dedicated history tool — its events surface through
+   `network_issues`; do not look for `dhcp_history`. Traceroute does:
+   `traceroute_history` returns the stored runs with their **raw** hop lines, and
+   resolves an `event_evidence` payload's `TracerouteSnapshotId` directly. Read
+   the raw lines — an `!N` from the local router localizes the fault to its WAN
+   link. `network_traceroute` is a fresh live trace and cannot answer about a
+   past window.)
    **Also diff the topology across `T`**: `topology_neighbors(device_id, depth=2,
    as_of=<before T>)` vs the same call now. A device that changed switch port, or
    an extender whose backhaul flipped from wired (`link_type=l2`) to wireless
