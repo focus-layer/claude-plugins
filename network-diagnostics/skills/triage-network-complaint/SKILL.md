@@ -297,24 +297,51 @@ suspect:
 
   **The ladder brackets the fault; it does not finish the job.** The
   `clean / loss / loss` row spans **two** hops — router→modem and modem→ISP —
-  because there is no standing anchor on the modem/ONT itself, and on a
-  double-NAT site (consumer router behind an ISP gateway) that gap is where the
-  fault usually is. Resolve inside the bracket, in this order:
+  because the modem/ONT is invisible at layer 3 and never appears in a
+  traceroute, and on a double-NAT site (consumer router behind an ISP gateway)
+  that gap is where the fault usually is. Resolve inside the bracket, in this
+  order:
 
-  1. **The router's WAN port.** `timeseries_range` on
+  1. **The modem/ONT itself — the only reads inside the gap.** Find the WAN
+     device first: on a bridge-mode site it is a *separate box* from the one
+     `network_tech_stack` calls the gateway, so sweep
+     `find_device(device_class=...)` over `cable_modem`, `cable_gateway`,
+     `fiber_ont`, `fiber_gateway`, `cellular_gateway`, `modem` (usually at
+     `192.168.100.1`). Then two signals, **in this order**:
+     - **Its scripted-probe samples.** A WAN telemetry probe reaches the modem
+       over HTTP across the router↔modem link, so a **fresh sample during the
+       window proves that hop was up** — free of the ICMP confound below, and on
+       some modems it is the only thing that answers at all. Key on the sample
+       **timestamp**, not the value. One-way inference only: samples present ⇒
+       path up; samples absent ⇒ *unknown*, since a failing rule, expired
+       credentials and an offline agent look identical. **Require the whole
+       metric set, not one series** — a cable rule that cannot log in still
+       emits a lone `docsis_connectivity_operational_up = 0` on schedule, so one
+       series arriving is the *error* path and its `0` is not a link state.
+     - **`timeseries_range` on `sprinter_ping_loss_ratio{device_id="<wan
+       device>"}`.** Clean here with loss on the ISP hop puts the fault
+       **beyond** the modem; loss here too puts it on the **router↔modem link or
+       the modem itself**. **Calibrate this series before reading it** — it comes
+       from the fleet multi-ping probe, so it quantizes to 0.2, many modems
+       rate-limit ICMP into a permanent non-zero baseline, and a flat `1.0`
+       usually means "never answers" rather than "down". `get_reference_doc`,
+       `name: wan-metrics-reference`, *Using the WAN device's ping as a path
+       anchor* has the tri-state procedure. Run it against a window that starts
+       **before** the complaint, or do not use the series at all.
+  2. **The router's WAN port.** `timeseries_range` on
      `sprinter_interface_operational_up` for that interface. `oper_up = 0` while
      `admin_up = 1` is **carrier loss on the router↔modem cable** — the break is
      inside the building, on a physical link, and nothing upstream can cause it.
-  2. **The routing plane —** `traceroute_history`. Read the STORED traces across
+  3. **The routing plane —** `traceroute_history`. Read the STORED traces across
      the window (`probe_id`/`target` + start/end), or resolve one exactly by
      passing an `event_evidence` payload's `TracerouteSnapshotId` as
      `snapshot_id`. **Read the raw `path_hops` lines, not the parsed counts.** An
      **`!N`** (ICMP network-unreachable) coming from the *local router's own IP*
-     means the router had no default route — the same conclusion as (1), reached
+     means the router had no default route — the same conclusion as (2), reached
      independently. A long run of `* * *` before it is ICMP error rate limiting,
      not extra hops failing. Do NOT use `network_traceroute` here: that runs a
      fresh live trace and says nothing about a window that has passed.
-  3. **The modem's own WAN telemetry** (`get_reference_doc`,
+  4. **The modem's own WAN telemetry values** (`get_reference_doc`,
      `name: wan-metrics-reference`). If link state held steady with no alarms
      across the whole window — a fiber ONT still showing the PON link up with
      unchanged optical RX power, a DOCSIS modem with unchanged lock — then the
@@ -325,7 +352,7 @@ suspect:
   loss` is equally consistent with a one-minute Ethernet flap on the cable
   between the router and the modem, and on a site with a customer-owned router
   that is the more common cause. Name which of the two hops the evidence in
-  1–3 actually indicts, or say that you could not separate them.
+  1–4 actually indicts, or say that you could not separate them.
 - **The egress path (when a device is named) — the layer map itself.** Call
   `topology_path(network_id=<net>, from_device=<device_id>, to="internet")`. It
   returns the device's actual route out: device → serving AP / switch → gateway
