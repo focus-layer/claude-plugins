@@ -116,6 +116,14 @@ Pin down only what changes the search:
   pattern points at congestion/Wi-Fi; constant points at config/ISP.
 - **What "slow/broken" means to them:** can't load pages (DNS/WAN), buffering
   video (throughput/jitter), calls drop (loss/jitter/roaming), specific app.
+- **Who the answer is for — inferred, never asked.** "Something I can send to
+  the ISP / for the ticket / what do I tell the vendor" → `escalation`; "explain
+  it to my dad / what do I tell the tenant / in plain English" → `end-user`;
+  otherwise `operator`. Carry the audience on every `Skill(...)` hand-off below
+  so the specialist renders for the same reader. Do **not** spend an `ask_user`
+  on this: the investigation is the same either way, and the other rendering
+  is offered at the end when it has a reason to exist
+  (`get_reference_doc(name: "report-audiences")`).
 
 Resolve the network and any named device. The user may belong to more than one
 organization (org); MCP tools span all of them, so **infer first**: if the prompt
@@ -605,9 +613,17 @@ which no other check here can see.
   learn what it is and check its identity/connectivity (it asks "what is this
   device?" and hands off to the Wi-Fi specialists if the device turns out to be
   wireless).
-- **ISP/WAN, gateway, DNS, throughput:** no specialist skill exists yet —
-  report the localized finding and the evidence directly. These are good
-  candidates for future triage→specialist funnels; note that to the user.
+- **WAN, cable site (the WAN bracket resolved to the modem→ISP segment, or any
+  DOCSIS metric `poor`):** invoke `Skill(troubleshoot-cable-modem)` — it reads
+  the carriers, knows the collection artifacts, and writes the ISP paragraph.
+- **WAN, fiber site with an optical-margin issue:** invoke
+  `Skill(interpret-optical-margins)` — it translates margin to dBm with the
+  optic's own thresholds, which is the only form an ISP can act on.
+- **ISP/WAN on cellular or Starlink, gateway, DNS, throughput:** no specialist
+  skill exists yet — report the localized finding and the evidence directly,
+  and when the owner is the ISP write the `escalation` paragraph yourself from
+  the `wan-metrics-reference` bands. These are candidates for future
+  triage→specialist funnels; note that to the user.
 - **Nothing localized — the failing path was unobservable (coverage gate, Step
   1.5) or every broad check came back clean:** do NOT invent a layer to blame.
   Close per Step 1.5-D — name the blind spot, list the layers you cleared, and
@@ -742,6 +758,21 @@ lookback window, while every evaluation was failing. If you need to know the rul
 is alive rather than merely remembered, check freshness:
 `max(time() - timestamp(sprinter_uptime_resets))` should be under a couple of
 minutes.
+
+## Report
+
+**Audience.** Default `operator`; `escalation` appended automatically when the
+localized fault's owner is external (ISP plant or path, upstream routing per
+`ioda`, vendor firmware); `end-user` on cue, or offered in one line when the
+complaint reads as coming from a non-technical person. When a specialist skill
+produced the finding, its rendering is the report — do not re-narrate it; add
+only the layers triage itself cleared. Rules and specimens:
+`get_reference_doc(name: "report-audiences")`.
+
+Skeleton, always: **Verdict** (which layer, since when, whose fault) →
+**Evidence** (the anchor-ladder row, the WAN read, the issue rows, the
+specialist's numbers) → **What we could not see** (the coverage gate's
+verdict, the layers not checked) → **Next action** (whose move).
 
 ## Honesty
 

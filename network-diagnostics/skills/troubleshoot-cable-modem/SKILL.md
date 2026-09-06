@@ -145,35 +145,41 @@ statements are **measured** and which are **inferred**:
 `ioda` / `isp_info` when the pattern is plant-wide (all carriers) to see whether the
 ISP has a regional event.
 
-### 6. Report — two audiences, two paragraphs
+### 6. Report
 
-**For the customer** — the answer to "is it my ISP, my modem, or my house":
+**Audience.** Default `operator`; the finding's owner is the ISP whenever the pattern is a
+plant fault, so the `escalation` paragraph is **appended automatically** in that case;
+`end-user` on cue or offer. Rules and the full worked example for this exact case are in
+`get_reference_doc(name: "report-audiences")` — fetch it the first time you render.
 
-> Your modem is online and has stayed registered; there was no outage. One of its 33
-> downstream carriers — the wide DOCSIS 3.1 carrier at the top of the band — is
-> running noisy: about 0.07% of what it receives is lost and roughly half of the rest
-> needs error correction, and it drops out for ~10 minutes several times a day while
-> the modem re-acquires it. The other 32 carriers are clean. You would notice this as
-> occasional short stalls or a slower peak speed rather than the internet going down;
-> video calls and gaming feel it first. Errors confined to the highest-frequency
-> carrier point at the cable, a connector or a splitter between the street and the
-> modem rather than at the ISP's network — this is something a technician visit can
-> fix, and you have the numbers below to give them.
+Follow the skeleton: **Verdict → Evidence → What we could not see → Next action.**
 
-**For the ISP / technician** — quotable, in their vocabulary, no internal names:
+- **Verdict.** Up or degraded or down; which carriers; since when; owner (ISP plant, in-home
+  wiring, modem, or "cable side eliminated").
+- **Evidence.** Per carrier: ratio (or per-second rate on platforms without totals) with its
+  rung, correctable ratio, SNR, power, re-acquisition count; the SC-QAM carriers' state as
+  the contrast; power tilt; upstream trend; what the network's own probes showed over the
+  same window.
+- **What we could not see.** No throughput probe (say "inferred from partial service"); the
+  issue rows you discarded as artifacts and why; any pre-window baseline you lacked;
+  credentials missing.
+- **Next action.** Whose move: ISP technician (with the paragraph below), in-home wiring
+  check (splitters, unused ports, fittings), or look inward because the cable side is clean.
+
+**`escalation` paragraph** — their vocabulary, no internal names, quotable verbatim:
 
 > Technicolor CGM4981 (XB8), CM MAC 4C:D7:4A:25:75:44. Downstream OFDM carrier (ch 193,
-> ~900 MHz): uncorrectable codeword ratio 7e-4 sustained (peaks 2e-3), correctable
-> ratio 0.46, MER 39 dB when locked, carrier re-acquired 5× in 13 h (MER unreported
-> ~10 min, then carrier absent ~10 min). All 28 SC-QAM carriers (ch 1–28, 256-QAM):
-> 0 uncorrectables, MER 40+ dB. Downstream power −6 to −7 dBmV across the band;
-> upstream 40–48 dBmV, stable. Pattern is frequency-selective at the top of the
-> downstream band: please check the drop, fittings and any splitter/amplifier for
-> high-frequency roll-off or ingress.
+> ~900 MHz): uncorrectable codeword ratio 7e-4 sustained (peaks 2e-3), correctable ratio
+> 0.46, MER 39 dB when locked, carrier re-acquired 5× in 13 h (MER unreported ~10 min, then
+> carrier absent ~10 min). All 28 SC-QAM carriers (ch 1–28, 256-QAM): 0 uncorrectables, MER
+> 40+ dB. Downstream power −6 to −7 dBmV across the band; upstream 40–48 dBmV, stable.
+> Measured at the modem's status page once a minute, 5 Sep 2026 03:00–21:00 PDT. The
+> pattern is frequency-selective at the top of the downstream band: please check the drop,
+> fittings and any splitter or amplifier for high-frequency roll-off or ingress.
 
-Always include, after the two paragraphs: the window you read, the rows you discarded
-as artifacts (and why), and what you could **not** determine (no throughput probe, no
-pre-window baseline, credentials missing).
+**`end-user` paragraph** (on cue, or offered in one line when the request reads as
+non-technical) — answers "is it my provider, my house, or my device", translates every
+number into an effect, names one action; see the reference doc for the specimen.
 
 ## Traps
 

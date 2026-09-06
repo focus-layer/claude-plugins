@@ -92,6 +92,23 @@ placeholder data, or skipping MCP-dependent steps.
 **Do not shell out to process tool results.** Parse JSON responses inline —
 never save MCP tool output to files or pipe it through Python/jq scripts.
 
+## Step 0: Who is the report for?
+
+**Audience.** This is a **document** skill, so the recipient determines the
+deliverable. If the request names one ("for the ticket", "to send the customer",
+"for my notes") use it. If it does not, ask **once**, at intake, with `ask_user`:
+
+> Who is this report for?
+> - `Me / my team (technical)` — `operator`: metric names, scores, baselines
+> - `The customer or household (plain language)` — `end-user`: no internal names,
+>   every anomaly stated as what they would have noticed
+> - `The ISP or vendor (escalation)` — `escalation`: only the WAN-layer and
+>   upstream findings, in their units, with timestamps and one ask
+
+Both phases below (inline summary, HTML report) render for the chosen audience; the
+`operator` template is the one shown in Step 9, the other two follow the same
+skeleton with the rendering rules in `get_reference_doc(name: "report-audiences")`. Do not ask again later.
+
 ## Step 1: Identify the Network
 
 If the user provided a network name or ID (via $ARGUMENTS or earlier in the

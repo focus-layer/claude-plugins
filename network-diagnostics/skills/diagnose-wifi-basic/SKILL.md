@@ -403,6 +403,19 @@ are broken" (user-actionable). On an older deployed server the request runs
 anonymous (login page / 401) — stay evidence+VM only and say what couldn't be
 read.
 
+## Report
+
+**Audience.** Default `operator`; the owner is inside the building (placement, AP,
+client radio), so no `escalation` paragraph is appended — except when the finding is
+a platform limitation worth a vendor ticket, where the `escalation` rendering names the
+model, firmware and the missing telemetry. `end-user` on cue, or offered in one line
+when the request reads as non-technical ("the kettle keeps dropping"). `caller`: when
+invoked from `triage-network-complaint` or `troubleshoot-device`, return the
+signal/retry verdict, the serving AP, and the empty-VM case you hit (a/b) so the caller
+can carry it. Rules: `get_reference_doc(name: "report-audiences")`.
+
+Skeleton: **Verdict → Evidence → What we could not see → Next action.**
+
 ## Honesty
 
 - The verdict rests on **live VM** health (signal + retry/deauth rate + trend)

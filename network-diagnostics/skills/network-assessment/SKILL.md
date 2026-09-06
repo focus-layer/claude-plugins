@@ -152,6 +152,13 @@ localizes the problem to the air), but the Wi-Fi verdict itself belongs to those
 
 ## Step 4: Present Assessment
 
+**Audience.** Default `operator`; `end-user` is common here ("is my internet good
+enough for video calls?") — render for it on cue, and offer it in one line when the
+question reads as non-technical. `escalation` appended automatically only when the
+assessment finds the WAN link itself degraded (the owner is the ISP). Rules: `get_reference_doc(name: "report-audiences")`.
+
+Skeleton: **Verdict → Evidence → What we could not see → Next action.**
+
 Structure your assessment around what the user cares about:
 
 **For general "how is my network?" questions:**

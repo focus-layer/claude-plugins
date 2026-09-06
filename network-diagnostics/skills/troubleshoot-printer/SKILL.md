@@ -9,6 +9,7 @@ description: >
 argument-hint: "[printer-address]"
 allowed-tools: >
   Bash, Read, Grep, Glob, Skill, WebSearch,
+  mcp__sprinter__get_reference_doc,
   mcp__sprinter__show_network,
   mcp__sprinter__show_agent,
   mcp__sprinter__list_networks,
@@ -432,6 +433,11 @@ If the user reports printing failures or the device seems unreachable:
    verify DNS resolves correctly.
 
 ## Step 7: Present Findings
+
+**Audience.** Default `operator`; `end-user` on cue ("is the printer out of toner?"
+usually is); `escalation` only for a hardware fault the vendor or a service contract
+must handle, rendered with model, serial, firmware, page count and the exact error
+code. Rules: `get_reference_doc(name: "report-audiences")`.
 
 Structure your report around what the user asked about. Always include:
 

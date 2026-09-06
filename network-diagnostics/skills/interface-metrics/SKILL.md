@@ -182,13 +182,18 @@ Report the counts in `sysUpTime` context. Do **not** re-sample with a sleep.
 
 ## Step 5 — Present findings
 
+**Audience.** Default `operator`; the owner is the operator (cable, optics, port
+config), so no `escalation` paragraph is appended unless the interface is the
+gateway's WAN port and the fault is beyond it; `end-user` on cue. `caller` is the
+common case — see the next section. Rules: `get_reference_doc(name: "report-audiences")`.
+
 State the interface (device + `if_name`/`if_index`), the throughput, the
 error/discard verdict (active vs benign, with the window you used), link speed
 and state, and any device-level health flag (reboot, CPU/memory pressure). When
 a finding is "no problem", say it plainly — a clean link over the queried window
 is itself a useful result that rules out the physical layer.
 
-## When this skill is reached from another skill
+## When this skill is reached from another skill (the `caller` rendering)
 
 Return the interface verdict (throughput, error/discard rate over the window,
 speed, link state) so the caller can fold it into its own report. Callers:

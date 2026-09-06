@@ -49,6 +49,11 @@ So: detect on margin, **always report in dBm.**
 
 ## The rule
 
+**Audience.** Default `operator`; the fiber path is the ISP's, so the `escalation`
+rendering (in dBm, with the optic's own thresholds beside it) is **appended
+automatically** whenever the finding is on the path rather than the ONT; `end-user` on
+cue or offer. Rules: `get_reference_doc(name: "report-audiences")`.
+
 > **Never put a margin value in anything a human reads** — not the issue
 > summary, not a report, not a chat answer, not an ISP escalation. Translate it
 > first. Margin may appear as supporting detail *after* the dBm statement, never
@@ -103,7 +108,10 @@ backwards sends a technician to the wrong end of the fiber.
    and any conclusion drawn across the gap is unsound. Say so rather than
    interpolating.
 4. **State the finding in dBm**, with the threshold beside it, and name the
-   tail's physical meaning from the table above.
+   tail's physical meaning from the table above — as **Verdict → Evidence →
+   What we could not see → Next action**. "What we could not see" is where an
+   `optical_ddm_parsed` gap goes; "Next action" names the owner (ISP for the
+   fiber path, the user for the ONT).
 5. **Sanity-check the arithmetic** the first time on a device: measured minus
    alarm threshold should equal the reported margin. A mismatch means the optic
    was swapped mid-window (the thresholds are per-transceiver constants, so they
@@ -132,7 +140,9 @@ optical_rx_power_warning_low_dbm -27.9      -27.9
 > with no change to the ONT points at the fiber path — a dirty or bent
 > connector, a failing splice, or a change upstream at the OLT.
 
-That paragraph is quotable to an ISP verbatim. The first version is not.
+That paragraph is the `escalation` rendering: quotable to an ISP verbatim. The
+first version is not. When the tail is on the ONT (Tx margin), the owner is the
+user and the next action is "replace the ONT"; no ISP paragraph is appended.
 
 ## Notes and traps
 

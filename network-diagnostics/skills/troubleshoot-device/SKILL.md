@@ -527,6 +527,14 @@ source. The full recipe is in the `when-did-this-start` reference (fetch via the
 
 ## Step 6: Present Findings
 
+**Audience.** Default `operator`; `end-user` on cue or offer ("what is this thing on
+my network?" is often non-technical); `escalation` only when the finding is a device
+firmware or vendor-cloud fault, rendered with model, serial and firmware for the
+vendor's desk. `caller`: when invoked from `triage-network-complaint`, return
+identity, connectivity verdict and the onset timestamp. Rules: `get_reference_doc(name: "report-audiences")`.
+
+Skeleton: **Verdict → Evidence → What we could not see → Next action.**
+
 Summarize what you found:
 - Device identity (vendor, model, device class) if determined
 - Connectivity status and any issues found

@@ -676,6 +676,13 @@ tool, `name: interpreting-wifi-telemetry`):
 
 ## Output
 
+**Audience.** Default `operator`; the owner is the operator (AP placement, min-RSSI
+config, wiring a mesh uplink), so no `escalation` paragraph is appended; `end-user` on
+cue or offer, in which case the candidate-fix ledger below is rendered as "what would
+and would not help, and why" without controller field names. `caller`: when invoked
+from `diagnose-wifi-basic`, return the link verdict, serving AP, mesh-backhaul finding
+and the ledger's dispositions. Rules: `get_reference_doc(name: "report-audiences")`.
+
 Give the user: (1) the link-quality verdict with the actual numbers
 (signal / retry% — and satisfaction only if it was read live), (2) the
 topology finding (serving AP name, any mesh backhaul that collides — with the

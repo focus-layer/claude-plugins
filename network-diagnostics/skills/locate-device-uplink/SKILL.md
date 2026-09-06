@@ -168,6 +168,14 @@ honestly rather than claiming a port.
 
 ## Step 4 — Present findings
 
+**Audience.** Default `operator`; the owner is the operator (a port, a cable, a
+100 Mbps negotiation), so no `escalation` paragraph is appended; `end-user` on cue
+("which plug is the TV on?"). `caller`: when invoked from `diagnose-wifi-roaming` or
+`troubleshoot-device`, return the attachment point with `method`/`confidence`, the
+link grade from `interface-metrics`, and any `UNPLACED` reason. Rules: `get_reference_doc(name: "report-audiences")`.
+
+Skeleton: **Verdict → Evidence → What we could not see → Next action.**
+
 Report, for the target device:
 
 - **Attachment point** — switch name + physical port (or AP + SSID/band), with

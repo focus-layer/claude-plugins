@@ -100,6 +100,18 @@ Or invoke a skill directly:
 /triage-network-complaint my-home-net
 ```
 
+## Who the answer is written for
+
+Every skill runs the same investigation and renders the result for one of four
+readers: the **operator** running the plugin (default: numbers, names, method,
+what was not checked), the **end user** who complained (plain language, one
+action), an **escalation** target such as the ISP or a vendor (their units and
+identifiers, quotable verbatim), or a **calling skill**. Say who it is for
+("something I can send to the ISP", "explain it to the tenant") and the skill
+renders for them; otherwise you get the operator view, with the ISP paragraph
+appended automatically whenever the fault is on their side. The report-generating
+skills ask once at the start when the recipient is not named.
+
 ## Notes on Wi-Fi skills
 
 Focus Layer's WiFi monitoring is **multi-platform** — UniFi, AT&T BGW320, OpenWrt,

@@ -10,6 +10,7 @@ description: >
 argument-hint: "[printer-address]"
 allowed-tools: >
   Bash, Read, Grep, Glob, Skill, WebSearch, Write,
+  mcp__sprinter__get_reference_doc,
   mcp__sprinter__show_network,
   mcp__sprinter__show_agent,
   mcp__sprinter__list_networks,
@@ -84,6 +85,16 @@ current status, consumable levels, page counters, paper trays, connectivity,
 advertised services, error history, and actionable recommendations.
 
 The report is saved to disk; tell the user the file path when done.
+
+## Step 0: Who is the report for?
+
+**Audience.** This is a **document** skill. If the request names the recipient ("for
+the office manager", "for the Brother service ticket") use it; otherwise ask **once**,
+at intake, with `ask_user`: `Me / my team (technical)` (`operator`, the templates in
+Step 5 as written), `The office (plain language)` (`end-user`: supplies and errors as
+what to do, no OIDs, no ports), or `The vendor or service contract (escalation)`
+(`escalation`: model, serial, firmware, page counts, exact error codes, one ask). Both
+HTML files render for that audience. Rules: `get_reference_doc(name: "report-audiences")`.
 
 ## Step 1: Resolve the Network
 
