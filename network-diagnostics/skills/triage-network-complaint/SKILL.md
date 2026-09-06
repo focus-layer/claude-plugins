@@ -178,6 +178,49 @@ Establish the observability of the failing path:
   complaint on Nest there is **nothing to read**, by design. An empty Wi-Fi column
   here is a **structural limit**, not a fault and not something to keep probing.
 
+**A2. Read the coverage block before calling any layer clean.**
+
+The gate above is about *vantage* — whether a probe can reach the failing path.
+This one is about *time*: every answer you get comes from a store with a
+retention horizon, and the horizons differ by a factor of about 2000. Metrics go
+back roughly 84 days; the raw probe archive 7; traceroute 7; a tenant's device
+and evidence history can be as short as **one hour**. A window that reaches past
+one of them comes back **shorter, not empty** — fewer issues, an empty topology,
+a device that "was never there" — and that reads exactly like a quieter network.
+
+So: `network_issues` may return a `coverage_gaps` array, and `topology_neighbors`
+/ `topology_path` / `device_presence_history` / `traceroute_history` may carry a
+coverage note. **When one is present, read it before you conclude anything about
+that layer.** The rule in one line:
+
+> **A source that could not be consulted is not a source that came back healthy.**
+
+The `state` tells you what to do:
+
+| state | What it means | What you must NOT do |
+|-------------------|--------------------------------------------------------|--------------------------------|
+| `covered` | The source answered for your whole window. | — |
+| `current_only` | It can tell you what is true NOW, not what was true then. | Quote today's value as the incident's. |
+| `horizon_limited` | Its data begins at `data_from`, after your window's start. | Read the short result as "nothing happened". |
+| `source_absent` | This network has NO such data, ever. | Report it as expired, or as a change. |
+| `source_error` | We tried to read it and could not. | Treat the empty answer as a finding. |
+
+`current_only` is the one that misleads quietly. Asking what a device was
+attached to last night, against a tenant with a 24-hour window, returns **today's
+attachment** — a substitution, not a memory. If a coverage note says
+`current_only`, say so in the verdict rather than presenting the value as
+historical.
+
+`show_device` has the same limit and does not report it: it **answers about now**
+and cannot answer about your incident window. Every evidence section carries its
+own `observed_at` — check it against the complaint window before treating any
+section as evidence about the incident.
+
+**Warnings now ride on SUCCESSFUL results.** An empty `timeseries_range` or
+`timeseries_instant` result is a success carrying a `warning` field, not an
+error. Read the warning on a successful response; if you only check for errors
+you will read "no data, no error" as "the metric was flat".
+
 **B. If the failing path IS observable, investigate normally** (Step 2 onward) and
 report from the data. The gate only diverts you when you are blind.
 
@@ -314,10 +357,11 @@ suspect:
        some modems it is the only thing that answers at all. Key on the sample
        **timestamp**, not the value. One-way inference only: samples present ⇒
        path up; samples absent ⇒ *unknown*, since a failing rule, expired
-       credentials and an offline agent look identical. **Require the whole
-       metric set, not one series** — a cable rule that cannot log in still
-       emits a lone `docsis_connectivity_operational_up = 0` on schedule, so one
-       series arriving is the *error* path and its `0` is not a link state.
+       credentials and an offline agent look identical. These rules emit
+       **no** gauge at all when the collect fails, only a classified error, so a
+       sample arriving really does mean the device was read — and a
+       `docsis_connectivity_operational_up = 0` is the modem's own answer about
+       its CMTS link, not our failure to reach it.
      - **`timeseries_range` on `sprinter_ping_loss_ratio{device_id="<wan
        device>"}`.** Clean here with loss on the ISP hop puts the fault
        **beyond** the modem; loss here too puts it on the **router↔modem link or
@@ -444,7 +488,11 @@ suspect:
   How to read the result:
   - Any WAN metric `poor` → **stop localizing inward.** The fault is on the cable
     plant / fiber / cellular link. Report it with the cause and, for cable, that
-    it is an ISP/line issue the user should raise with their provider.
+    it is an ISP/line issue the user should raise with their provider — then
+    **hand off to `Skill(troubleshoot-cable-modem)`** for the per-carrier reading
+    (which carrier, artifact vs plant fault, what the customer felt, the quotable
+    ISP statement). The band check here is yes/no; that skill is the diagnosis,
+    and it knows the collection artifacts that make a `poor` read false.
   - All WAN metrics `good` → the WAN link is healthy. This is a **positive
     finding**: it eliminates the entire upstream layer, so the problem is inside
     the building (Wi-Fi, LAN, DNS, or the device). Say so — it is what lets the
@@ -608,6 +656,92 @@ Read-only, on tools already listed above. Full recipe: fetch via
 This is localization-grade (cheap, broad), not the specialist's deep timeline —
 note onset + any co-occurring infra event in the hand-off so the specialist
 starts from it.
+
+### Did something REBOOT at `T`?
+
+The highest-signal single fact in this whole step, and the cheapest. A switch
+that rebooted at 03:12 explains every neighbour that lost its uplink at 03:12 —
+the reboot *is* the answer, and nothing else in the sweep above will name it.
+
+Two derived series carry it. Neither is collected: both are computed in
+VictoriaMetrics from every uptime metric at once (sprinter#484), which is why
+one query covers the Starlink dish, the fibre link, the cellular gateway, the
+Wi-Fi mesh nodes and every SNMP device.
+
+| Series | What it is | Use it for |
+|---|---|---|
+| `sprinter_uptime_resets` | count of uptime drops in the last 30 min: `0` healthy, `1` for 30 min after a restart | **detection** — this is what raises the issue |
+| `sprinter_boot_epoch_seconds` | UNIX epoch the thing came up | **the "when"** — read it directly, accurate to about a second |
+
+```promql
+# What restarted on this network in the complaint window?
+max_over_time(sprinter_uptime_resets{network_id="<id>"}[24h]) > 0
+
+# When did that thing last come up? (epoch seconds -> a timestamp)
+sprinter_boot_epoch_seconds{device_id="<id>"}
+```
+
+The `uptime_of` label names WHAT restarted — `system`, `optical_link`,
+`cellular_gateway`, `starlink`, `wifi_node`, `interface`. A device can report
+more than one, and they mean genuinely different things: `optical_link` on a
+fibre gateway is a link flap, not a reboot of the box.
+
+**How confident to sound.** This is corroboration for a problem the user has
+already reported, not an alert. The sentence it exists to enable is *"during the
+window you reported, this router's uptime reset — it most likely rebooted."*
+Say that plainly. Do not stack hedges onto it: the caveats below change the
+wording in specific, named situations, and outside those a reset during the
+reported window is good evidence and should be presented as such.
+
+**Four caveats, each of which changes what you should say — and only when it
+applies:**
+
+- **A steady flapper is INVISIBLE here.** If a device restarts at a constant
+  rate for the whole window, the reset count becomes its own baseline and no
+  finding is raised. This method is good at "it rebooted once", weak at "it
+  reboots constantly". Absence of a finding is not evidence the device is
+  stable — check `sprinter_boot_epoch_seconds` directly, which shows a recent
+  boot regardless.
+- **The finding reads about 30 minutes LONGER than the event.** The plateau
+  lasts exactly the recording rule's window. Quote the boot epoch as the time,
+  never the finding's duration.
+- **Severity is 1.00 for all of these**, by construction. It does not rank them
+  — do not read a high severity as a worse reboot.
+- **Read `uptime_source` before calling it a reboot.** Since sprinter#580 the
+  metric carries the OID that produced it, so you do not have to guess:
+
+  | `uptime_source`  | What a reset means                                      |
+  |------------------|---------------------------------------------------------|
+  | `hrSystemUptime` | The HOST rebooted. Say so directly.                     |
+  | `snmpEngineTime` | The SNMP engine restarted — usually the box, but on a Linux host it can be `snmpd` alone. |
+  | `sysUpTime`      | Same caveat, plus this counter wraps (below).            |
+
+  A measured example of why this matters: a host up 344 days reported 7.65 days
+  on both agent-scoped OIDs. On the two agent-scoped sources, prefer "the SNMP
+  agent restarted, likely the device" over asserting a reboot outright.
+
+**The 497-day wrap, in proportion.** `sysUpTime` and `hrSystemUptime` are
+32-bit TimeTicks and roll over every 497.1 days, and at that instant the drop
+looks like a reboot. This does **not** mean the device is invisible — it is
+collected and charted normally; only the interpretation of that one drop is
+ambiguous. It is one instant per 497 days per device, so for it to mislead you
+it must land inside the very window being investigated: roughly 1 in 12,000 for
+a one-hour window. Treat it as a footnote, not a reason to hedge. If you do want
+to rule it out, a wrap advances `sprinter_boot_epoch_seconds` by **exactly**
+497.1027 days where a real reboot advances it by an arbitrary amount.
+
+If `sprinter_uptime_resets` returns no series at all for a network whose devices
+DO report uptime, that is a broken recording rule rather than a quiet network —
+the `UptimeResetsRuleDead` alert covers it. Say "restart detection is
+unavailable", not "nothing restarted".
+
+And do not read a plausible series COUNT as proof the rule is healthy. When these
+rules broke once (sprinter#484 §12.1), `count(sprinter_uptime_resets)` kept
+returning the correct 9 for as long as the last good samples stayed inside the
+lookback window, while every evaluation was failing. If you need to know the rule
+is alive rather than merely remembered, check freshness:
+`max(time() - timestamp(sprinter_uptime_resets))` should be under a couple of
+minutes.
 
 ## Honesty
 

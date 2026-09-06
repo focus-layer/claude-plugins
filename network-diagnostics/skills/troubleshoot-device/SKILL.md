@@ -383,7 +383,7 @@ reference / the no-metrics fallback (which `interface-metrics` handles):
   `.2` nominal watts, `.3` oper status (1=on, 2=off, 3=faulty),
   `.4` consumption watts, `.5` usage-alarm threshold (percent).
 - RFC 3621 defines **no per-port wattage object** — per-port power draw
-  requires a vendor MIB. See `docs/platforms/poe/POWER-ETHERNET-MIB.txt`.
+  requires a vendor MIB. See `docs/mibs/POWER-ETHERNET-MIB`.
 
 ## Step 4: Where does this device sit in the fabric?
 

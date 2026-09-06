@@ -252,6 +252,54 @@ calls.** Do not convert timestamps yourself.
 
 If the call fails, report the error and stop.
 
+### Step 5a: Read `coverage_gaps` before concluding anything
+
+The response may carry a top-level **`coverage_gaps`** array. It is present only
+when a source could NOT answer for your window, so its absence means everything
+was covered and there is nothing to say.
+
+Every answer here comes from a store with a retention horizon, and the horizons
+differ by a factor of about 2000: metrics go back roughly 84 days, the raw probe
+archive and traceroute 7 days, and a tenant's device and evidence history can be
+as short as **one hour**. A window reaching past one of them returns a **shorter
+list, not an error** — which reads exactly like a quieter week. This is not
+hypothetical: the same window once returned 2 issues at 15:54 and 1 issue at
+23:02, with nothing in either response saying evidence had expired.
+
+> **A source that could not be consulted is not a source that came back healthy.**
+
+Each gap names a `source` (`metrics`, `probe_reports`, `traceroute`,
+`dhcp_config`), a `state`, a `data_from` / `data_from_unix_ms` where one applies,
+and a `note` written for you to act on.
+
+| state | What it means | What you must NOT do |
+|-------------------|--------------------------------------------------------|--------------------------------|
+| `covered` | The source answered for your whole window. | — |
+| `current_only` | It can tell you what is true NOW, not what was true then. | Quote today's value as the window's. |
+| `horizon_limited` | Its data begins at `data_from`, after your window's start. | Read the short list as "a quiet week". |
+| `source_absent` | This network has NO such data, ever. | Report it as expired, or as a change. |
+| `source_error` | We tried to read it and could not. | Treat the empty answer as a finding. |
+
+What to do about one:
+
+1. **Say it in the report**, in the same place you would note a truncated result.
+   A reader comparing this week to last must know the two windows were not
+   answered from the same evidence.
+2. **Narrow the window** to inside `data_from` and re-run, if the comparison
+   matters more than the reach.
+3. **Never** describe a layer as clean on the strength of a source that reported
+   a gap. Say which layers you actually cleared and which you could not consult.
+
+**Warnings now ride on SUCCESSFUL results.** An empty `timeseries_range` or
+`timeseries_instant` result is a success carrying a `warning` field, not an
+error — so a check that only looks for errors reads "no data, no error" as "the
+metric was flat". Read the warning on successful responses.
+
+And `show_device` **answers about now**: it takes no time window and cannot tell
+you what a device was during the report period. Each evidence section carries
+its own `observed_at`; check it against the window before using that section as
+evidence about anything historical.
+
 ## Step 5b: WAN Link Health (always run this)
 
 The anomaly stream tells you *that* the network misbehaved. The WAN metrics tell
@@ -794,6 +842,14 @@ doc's band — the tail's meaning, not just "out of band". Example:
 > straining to be heard by the CMTS. **Likely cause: return-path attenuation** —
 > a bad connector, corroded splitter, or damaged drop cable between the house and
 > the tap.
+
+**DOCSIS rows need the artifact check before they are narrated.** Group them by
+`dimensions.channel_id`; drop rows whose `segment_after_mean` is `+Inf` (stalled ratio
+denominator) or an SNR `0.00` (pre-fix "not reporting"), and any uncorrectable rate
+near the carrier's ~50k/s total (a counter-reset artifact); prefer the one long
+`mean_shift` row on a channel over its burst rows. `Skill(troubleshoot-cable-modem)`
+owns this reading and the customer / ISP wording; hand off when DOCSIS rows are the
+finding rather than a footnote.
 
 **Ordering:** WAN issues co-occur (a plant problem trips SNR, uncorrectables, and
 channel lock together). Keep the API's `scoreOverall` ordering, but call it out in
