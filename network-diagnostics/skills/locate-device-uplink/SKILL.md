@@ -89,8 +89,16 @@ did the MAC→port matching, including for Wi-Fi clients with randomized MACs.)
 topology_neighbors(network_id=<net>, device_id=<target device_id>, depth=1)
 ```
 
-That is the whole location step. The result is an edge list; the edge that
-matters is the one **out of the target device**:
+That is the whole location step. **Read the `# uplinks:` block first if there is
+one.** Most devices have none, which means one uplink or none and the edge list
+below already says it. When the block IS there the device reaches the network
+over more than one link at once, and *every* leg is an attachment point — report
+them all, with the local address of each where it is known. Fetch
+`get_reference_doc(name: "topology-graph-reference")` and read "Multiple Uplinks"
+before writing the verdict.
+
+Otherwise the result is an edge list, and the edge that matters is the one
+**out of the target device**:
 
 ```
 Tesla (7e57d79c) --ATTACHED_TO:wifi:WIFI_ASSOC:0.90--> ap-garage (a1b2c3d4)  [1 hop, upstream]

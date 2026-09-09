@@ -286,7 +286,10 @@ the min-RSSI safety check is skipped.
 `anchorDeviceId`, `wired`, `connectedSince`, `observedAt`. Capture the device's
 **`device_id`** and the snapshot's **`source`** (`"wifi_<platform>"` → strip
 `wifi_` for the platform key). If `wired` is true, the device is Ethernet-attached
-behind an AP — say so and stop. If there is no association, it is offline (or
+behind an AP — say so, but check `show_device`'s `uplinks` key before stopping:
+a client with both a wired leg and an association has two paths, and the
+association is still the Wi-Fi truth. Stop only when there is no `wifi` leg.
+If there is no association, it is offline (or
 wired); **offline is not a stop** — its VM series still holds the last points, so
 proceed to 1b and read them (they date when it dropped off the air). The client's
 **channel** is not in evidence; if it matters, it is part of the residual.

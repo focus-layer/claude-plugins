@@ -438,7 +438,7 @@ recurring issues.
 
 #### Header
 - Title: "Printer Detail Report — {Model Name}"
-- Subtitle: same as main report, plus "Companion to [main report](link)"
+- Subtitle: same as main report, plus "Companion to <main report>", linking back to it
 
 #### 1. Page Counters
 - Total lifetime pages (large, prominent number)

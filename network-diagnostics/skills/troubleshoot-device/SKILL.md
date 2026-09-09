@@ -389,7 +389,17 @@ reference / the no-metrics fallback (which `interface-metrics` handles):
 
 Focus Layer persists the network's topology as a graph — which switch port each
 device is plugged into, which AP each Wi-Fi client is on, how the switches
-interconnect, and how the network egresses to its ISP. Two cheap reads:
+interconnect, and how the network egresses to its ISP.
+
+**If the output carries a `# uplinks:` block, say so in the FIRST sentence of
+your topology paragraph.** The device reaches the network over more than one
+link at once, so "the uplink" is the wrong phrase and a test aimed at one of its
+addresses exercises only one leg. Ask the user which address they are on, or
+infer it from the complaint. A `# serves:` block is the blast radius, already
+counted — use it instead of tallying edge lines. Most devices have neither
+block, which means there is nothing extra to say.
+
+Two cheap reads:
 
 **`topology_neighbors(network_id=<net>, device_id=<id>, depth=1)`** — the
 device's immediate attachment: the switch + physical port (`port=`, `if_index=`)
@@ -441,7 +451,10 @@ source. The full recipe is in the `when-did-this-start` reference (fetch via the
    exactly the chain the topology graph already holds: call
    **`topology_path(network_id=<net>, from_device=<id>, to="internet")`**. It
    returns device → serving AP / switch → gateway → ISP in one read, which *is*
-   the dependency set (`topology_neighbors(depth=3)` gives the same chain plus
+   the dependency set — **of one leg**. On a device with several uplinks the
+   response ends with an `# alternate uplink` footer naming the others; that is
+   a second dependency set, and a fault on it will not appear anywhere in this
+   path. (`topology_neighbors(depth=3)` gives the same chain plus
    the siblings hanging off each hop). Do not assemble it by hand from
    `network_info` + `wifiSnapshots.anchorDeviceId` +
    `find_device(device_class="network_switch")` + `isp_info` — the graph is the

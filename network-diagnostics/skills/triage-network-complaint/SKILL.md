@@ -191,7 +191,7 @@ Establish the observability of the failing path:
 The gate above is about *vantage* — whether a probe can reach the failing path.
 This one is about *time*: every answer you get comes from a store with a
 retention horizon, and the horizons differ by a factor of about 2000. Metrics go
-back roughly 84 days; the raw probe archive 7; traceroute 7; a tenant's device
+back roughly 90 days; the raw probe archive 7; traceroute 7; a tenant's device
 and evidence history can be as short as **one hour**. A window that reaches past
 one of them comes back **shorter, not empty** — fewer issues, an empty topology,
 a device that "was never there" — and that reads exactly like a quieter network.
@@ -409,7 +409,10 @@ suspect:
   `topology_path(network_id=<net>, from_device=<device_id>, to="internet")`. It
   returns the device's actual route out: device → serving AP / switch → gateway
   → ISP, with the `public_ip`, `first_isp_hop`, and `asn` on the egress edge.
-  **This is the localization skeleton** — every layer in the table below is a hop
+  **This is the localization skeleton** — but it is the skeleton of **one
+  uplink**. If the response ends with an `# alternate uplink` footer, the device
+  has another way out and a second skeleton exists; localize on the leg that
+  owns the address the complaint is about. Every layer in the table below is a hop
   on it, and each hop is named with a `device_id` you can hand straight to
   `network_ping` / `device_presence_history` / `show_device`. Localizing "the
   internet is slow" means deciding *which hop on this path* is at fault; getting
@@ -554,7 +557,10 @@ suspect:
   (BGW320 gateway) is **sparse** (no per-client SNR/retries — only signal +
   deauth/disassoc). Missing SNR/retries on a BGW320 is **expected, not a
   fault** — do not read a sparse snapshot as a problem. `wired: true` means
-  Ethernet behind an AP — rule Wi-Fi out. This is Focus Layer's own evidence,
+  Ethernet behind an AP — but rule Wi-Fi out only if `show_device`'s `uplinks`
+  key has no `wifi` leg. A docked laptop is on Ethernet *and* associated at
+  once, and stopping here would drop the leg the complaint may be about.
+  This is Focus Layer's own evidence,
   polled from the controller about every minute (`observedAt` 1–2 min stale is
   fine); this snapshot read is a **routing signal only** — the authoritative
   live-VM read and catalog-band grading happen in `diagnose-wifi-basic`, so no

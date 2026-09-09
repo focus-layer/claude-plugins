@@ -276,7 +276,7 @@ when a source could NOT answer for your window, so its absence means everything
 was covered and there is nothing to say.
 
 Every answer here comes from a store with a retention horizon, and the horizons
-differ by a factor of about 2000: metrics go back roughly 84 days, the raw probe
+differ by a factor of about 2000: metrics go back roughly 90 days, the raw probe
 archive and traceroute 7 days, and a tenant's device and evidence history can be
 as short as **one hour**. A window reaching past one of them returns a **shorter
 list, not an error** — which reads exactly like a quieter week. This is not

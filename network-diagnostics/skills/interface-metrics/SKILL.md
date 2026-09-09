@@ -75,6 +75,10 @@ unavailable and must be reconnected. Do not work around it with guesses.
 Resolve the `network_id` (hand off to `Skill(select-network)` if not known).
 `find_device` the target to get its `device_name` (the metric label) and
 `device_id`. Interfaces are keyed by **`if_index`** (and labelled `if_name`,
+NOTE: a leg in a `# uplinks:` block may carry a `local_if_index` — the device's
+OWN end of that link, a second series for the same cable alongside the switch
+port's. Use it when present. It is absent on most devices and that is normal:
+do not go hunting for it, and never pass an index the block did not print.
 e.g. `1/0/25`). If you don't know the `if_index`, query without it (Step 2
 returns one series per interface) and pick by `if_name`, or read
 `sprinter_interface_info` to list interfaces with their `if_alias`/`if_role`.

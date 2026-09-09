@@ -149,7 +149,13 @@ platform: it states plainly what that platform reports and what it withholds
 (e.g. Google Wifi exposes no client roster at all, so there is *no* per-client
 snapshot to expect — the emptiness is structural, not a fault). Report that
 limitation to the user rather than chasing missing data. Distinguish:
-`wired: true` ⇒ stop (it is Ethernet behind an AP). But **offline is not a dead
+`wired: true` ⇒ Ethernet behind an AP — but **check `show_device`'s `uplinks`
+key before you stop.** A device can be on Ethernet *and* associated to Wi-Fi at
+the same time (a docked laptop). If `uplinks` lists a `wifi` leg, do not rule
+Wi-Fi out: report both, and say which is which — the controller is the more
+recent statement about association, the graph the more reliable statement about
+what links exist. Only when there is no `wifi` leg is this genuinely a wired
+device. But **offline is not a dead
 end** — the device's
 VM series still holds its last points, so go to Step 3 and query the **latest
 available** points anyway (the last value is the last measured health; its
