@@ -33,13 +33,11 @@ allowed-tools: >
 
 Locate the uplink for $ARGUMENTS
 
-> **Output discipline.** Investigate quietly. Do NOT narrate your process to the
-> user — no "let me…", no "now I'll…", no announcing which tools you are loading
-> or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
-> supports several platforms…"). Call tools without describing the act of calling
-> them. Surface only what matters to the user: the findings, the supporting
-> evidence, and the verdict/next step. Keep any interim text minimal.
+> **Output.** Lead with what the user needs: the findings, the evidence behind
+> them, and the verdict or next step. Leave out tool mechanics (which tools you are
+> loading or calling) and background on which platforms Focus Layer supports. On a
+> long investigation, a one-line note on what you are checking next is fine. A blind
+> spot and the reason for it is a finding, not narration — it belongs in the report.
 
 ## What this skill does
 
@@ -79,9 +77,9 @@ failed MCP connection by guessing or using placeholder data.
 
 If you do not already have a `network_id`, hand off to `Skill(select-network)`
 or resolve it from context. Then `find_device` the target to get its
-**`device_id`** — that is the key `topology_neighbors` is anchored on. (You no
-longer need the MAC: the graph is keyed by `device_id`, and the resolver already
-did the MAC→port matching, including for Wi-Fi clients with randomized MACs.)
+**`device_id`** — that is the key `topology_neighbors` is anchored on. (The
+MAC is not needed: the resolver has already matched MAC to port, including for
+Wi-Fi clients with randomized MACs.)
 
 ## Step 1 — Read the attachment from the graph (one call)
 
@@ -146,9 +144,9 @@ negotiated below its capable speed caps every device on the branch.
 
 ## Step 3 — Judge the evidence: `method` + `confidence`
 
-The graph tells you not just *what* it concluded but *how*. This replaces the
-old MAC-count edge-vs-uplink heuristic — the resolver already made that
-determination, and it made it with more evidence than a single FDB walk has.
+The graph tells you not just *what* it concluded but *how*. The resolver has
+already made the edge-vs-uplink determination, with more evidence than a single
+FDB walk has.
 
 | `method`     | Trust   | What it means                                  |
 |--------------|---------|------------------------------------------------|

@@ -23,7 +23,7 @@ allowed-tools: >
   mcp__sprinter__find_network,
   mcp__sprinter__find_device,
   mcp__sprinter__show_device,
-  mcp__sprinter__device_presence_history,
+  mcp__sprinter__network_device_events,
   mcp__sprinter__network_issues,
   mcp__sprinter__event_evidence,
   mcp__sprinter__issue_chart,
@@ -59,13 +59,11 @@ allowed-tools: >
 > have done. If an MCP tool cannot express what you need, report the gap; do not
 > route around it.
 
-> **Output discipline.** Investigate quietly. Do NOT narrate your process to the
-> user — no "let me…", no "now I'll…", no announcing which tools you are loading
-> or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
-> supports several platforms…"). Call tools without describing the act of calling
-> them. Surface only what matters to the user: the findings, the supporting
-> evidence, and the verdict/next step. Keep any interim text minimal.
+> **Output.** Lead with what the user needs: the findings, the evidence behind
+> them, and the verdict or next step. Leave out tool mechanics (which tools you are
+> loading or calling) and background on which platforms Focus Layer supports. On a
+> long investigation, a one-line note on what you are checking next is fine. A blind
+> spot and the reason for it is a finding, not narration — it belongs in the report.
 
 Most real complaints are **underspecified**: "is the internet slow today?" can
 mean a download-speed drop, DNS failures, intermittent dead spells, one bad
@@ -104,9 +102,6 @@ diagnosis** — narrow the report to a layer, then hand off. It is **read-only**
 > singles out X, that sentence is the trigger to invoke the **Ask the user**
 > discipline (Step 1.5) or to report the blind spot honestly instead.
 
-No working-directory check needed (no repo writes). It dispatches to other
-skills, which run their own checks.
-
 ## Step 1 — Minimal intake (don't over-ask)
 
 Pin down only what changes the search:
@@ -140,8 +135,7 @@ different networks. This bites hardest here, because triage gets pointed at exac
 addresses that collide: `.1` and `.254` gateways. In one fleet `192.168.1.254` is an AT&T
 gateway on **two** networks — same vendor, same name, different box. When an address
 matches more than one device, `ask_user` showing **network — vendor — product**; never
-pick one, and never treat a single match as proof of uniqueness. See "An IP address is NOT
-a device identity" in the plugin CLAUDE.md.
+pick one, and never treat a single match as proof of uniqueness.
 
 **Correlating across networks (a multi-site tenant).** A tenant who owns several sites may
 reasonably ask a cross-network question — *"is the ISP flaky at all four offices?"*, *"did
@@ -197,7 +191,7 @@ one of them comes back **shorter, not empty** — fewer issues, an empty topolog
 a device that "was never there" — and that reads exactly like a quieter network.
 
 So: `network_issues` may return a `coverage_gaps` array, and `topology_neighbors`
-/ `topology_path` / `device_presence_history` / `traceroute_history` may carry a
+/ `topology_path` / `network_device_events` / `traceroute_history` may carry a
 coverage note. **When one is present, read it before you conclude anything about
 that layer.** The rule in one line:
 
@@ -224,7 +218,7 @@ and cannot answer about your incident window. Every evidence section carries its
 own `observed_at` — check it against the complaint window before treating any
 section as evidence about the incident.
 
-**Warnings now ride on SUCCESSFUL results.** An empty `timeseries_range` or
+**Warnings ride on SUCCESSFUL results.** An empty `timeseries_range` or
 `timeseries_instant` result is a success carrying a `warning` field, not an
 error. Read the warning on a successful response; if you only check for errors
 you will read "no data, no error" as "the metric was flat".
@@ -414,7 +408,7 @@ suspect:
   has another way out and a second skeleton exists; localize on the leg that
   owns the address the complaint is about. Every layer in the table below is a hop
   on it, and each hop is named with a `device_id` you can hand straight to
-  `network_ping` / `device_presence_history` / `show_device`. Localizing "the
+  `network_ping` / `network_device_events` / `show_device`. Localizing "the
   internet is slow" means deciding *which hop on this path* is at fault; getting
   the path first makes the rest of Step 2 a targeted check rather than a sweep.
 
@@ -432,13 +426,14 @@ suspect:
   **When the complaint is that a device *went offline*, `as_of` is not a
   refinement — it is required.** The graph closes a device's edges once it stops
   being observed, so an offline device returns `found: false` at "now" no matter
-  how it was wired. Pin the onset `T` first (`device_presence_history`), then ask
+  how it was wired. Pin the onset `T` first (`network_device_events`), then ask
   as of `T − 15 min`. Treating the "now" answer as the finding reports the
   outage's *consequence* as if it were its cause.
 - **"This device keeps going offline / drops intermittently" (a named device):**
-  call `device_presence_history` with the device's `device_id` over the complaint
+  call `network_device_events` with the device's `device_id` over the complaint
   window. It returns the device's **state-transition timeline** (online ⇄ sleep ⇄
-  offline, plus Wi-Fi roam/disassoc events), which localizes an intermittency
+  offline, plus Wi-Fi roam/disassoc events and network adapters attached or
+  detached, e.g. a laptop leaving its dock), which localizes an intermittency
   complaint in one cheap read — a single `network_ping` only sees up-or-down
   *now*. Read it as: `online <-> offline` flapping = a real drop pattern;
   `online -> sleep -> online` = a healthy power-saving client (`sleep` =
@@ -649,7 +644,7 @@ co-occurrence often *is* the localization.
 Read-only, on tools already listed above. Full recipe: fetch via
 `get_reference_doc`, `name: when-did-this-start`. Short form:
 
-1. **Pin the onset `T`.** If a device is named, `device_presence_history` over
+1. **Pin the onset `T`.** If a device is named, `network_device_events` over
    the complaint window — the first `online -> offline` flap or clustered
    `roamed`/`disassociated` is the onset (an `online -> sleep -> online` cycle is
    healthy power-save, not an onset). For a network-wide complaint, the earliest
@@ -663,7 +658,7 @@ Read-only, on tools already listed above. Full recipe: fetch via
    LAN), **`pt_traceroute`** (path change upstream), `pt_ping`/`pt_dns` on the
    gateway (infra-wide). DHCP and traceroute events have **no** dedicated history
    tool — they come through `network_issues`. Check `isp_info`/`ioda` for an ISP
-   outage that began at `T`. Run `device_presence_history` on **each infra hop
+   outage that began at `T`. Run `network_device_events` on **each infra hop
    the `topology_path` named** (serving AP, switch, gateway) — one of them going
    `offline` at ≈ `T` localizes the complaint outright.
    **And diff the path across `T`**: `topology_path(..., as_of=<before T>)` vs
@@ -686,7 +681,7 @@ that rebooted at 03:12 explains every neighbour that lost its uplink at 03:12 �
 the reboot *is* the answer, and nothing else in the sweep above will name it.
 
 Two derived series carry it. Neither is collected: both are computed in
-VictoriaMetrics from every uptime metric at once (sprinter#484), which is why
+VictoriaMetrics from every uptime metric at once, which is why
 one query covers the Starlink dish, the fibre link, the cellular gateway, the
 Wi-Fi mesh nodes and every SNMP device.
 
@@ -729,8 +724,8 @@ applies:**
   never the finding's duration.
 - **Severity is 1.00 for all of these**, by construction. It does not rank them
   — do not read a high severity as a worse reboot.
-- **Read `uptime_source` before calling it a reboot.** Since sprinter#580 the
-  metric carries the OID that produced it, so you do not have to guess:
+- **Read `uptime_source` before calling it a reboot.** The metric carries the
+  OID that produced it, so you do not have to guess:
 
   | `uptime_source`  | What a reset means                                      |
   |------------------|---------------------------------------------------------|
@@ -757,10 +752,9 @@ DO report uptime, that is a broken recording rule rather than a quiet network �
 the `UptimeResetsRuleDead` alert covers it. Say "restart detection is
 unavailable", not "nothing restarted".
 
-And do not read a plausible series COUNT as proof the rule is healthy. When these
-rules broke once (sprinter#484 §12.1), `count(sprinter_uptime_resets)` kept
-returning the correct 9 for as long as the last good samples stayed inside the
-lookback window, while every evaluation was failing. If you need to know the rule
+And do not read a plausible series COUNT as proof the rule is healthy. A failing
+rule keeps returning the right `count(sprinter_uptime_resets)` for as long as its
+last good samples stay inside the lookback window, while every evaluation fails. If you need to know the rule
 is alive rather than merely remembered, check freshness:
 `max(time() - timestamp(sprinter_uptime_resets))` should be under a couple of
 minutes.

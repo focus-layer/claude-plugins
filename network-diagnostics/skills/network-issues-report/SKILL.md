@@ -33,13 +33,11 @@ allowed-tools: >
   mcp__sprinter__traceroute_history
 ---
 
-> **Output discipline.** Investigate quietly. Do NOT narrate your process to the
-> user — no "let me…", no "now I'll…", no announcing which tools you are loading
-> or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
-> supports several platforms…"). Call tools without describing the act of calling
-> them. Surface only what matters to the user: the findings, the supporting
-> evidence, and the verdict/next step. Keep any interim text minimal.
+> **Output.** Lead with what the user needs: the findings, the evidence behind
+> them, and the verdict or next step. Leave out tool mechanics (which tools you are
+> loading or calling) and background on which platforms Focus Layer supports. On a
+> long investigation, a one-line note on what you are checking next is fine. A blind
+> spot and the reason for it is a finding, not narration — it belongs in the report.
 
 Generate a network issues report for $ARGUMENTS
 
@@ -307,7 +305,7 @@ What to do about one:
 3. **Never** describe a layer as clean on the strength of a source that reported
    a gap. Say which layers you actually cleared and which you could not consult.
 
-**Warnings now ride on SUCCESSFUL results.** An empty `timeseries_range` or
+**Warnings ride on SUCCESSFUL results.** An empty `timeseries_range` or
 `timeseries_instant` result is a success carrying a `warning` field, not an
 error — so a check that only looks for errors reads "no data, no error" as "the
 metric was flat". Read the warning on successful responses.
@@ -362,11 +360,10 @@ detector happened to notice, and a clean WAN link is what lets you say
 5. **Grade each value against its band** and report the **cause**, not the
    number.
 
-**Do not hardcode metric names or thresholds in this skill.** They live in the
-catalog and reach you through the reference doc. (This section previously carried
-its own DOCSIS table; the catalog moved to per-channel, vendor-neutral names and
-the table silently rotted into describing metrics that no longer existed. Fetch,
-don't remember.)
+**Do not grade WAN metrics from names or thresholds you remember.** They live in
+the catalog and reach you through the reference doc, which is regenerated when
+the catalog changes; a remembered table drifts into describing metrics that no
+longer exist. Fetch, don't remember.
 
 **Two-sided metrics: say which tail.** Some WAN metrics are bad in *both*
 directions, and the two tails are *different faults with opposite fixes*. A DOCSIS
@@ -558,7 +555,7 @@ filtered out)
 
 ### Summary
 
-{2-4 sentence synthesis}
+{synthesis — see *Summary section* below}
 ```
 
 After the inline summary, ask the user:
@@ -668,7 +665,7 @@ Use this HTML structure:
 
   <div class="summary">
     <h2>Summary</h2>
-    <p>{2-4 sentence synthesis}</p>
+    <p>{synthesis — see *Summary section* below}</p>
   </div>
 </body>
 </html>
@@ -869,7 +866,7 @@ owns this reading and the customer / ISP wording; hand off when DOCSIS rows are 
 finding rather than a footnote.
 
 **Ordering:** WAN issues co-occur (a plant problem trips SNR, uncorrectables, and
-channel lock together). Keep the API's `scoreOverall` ordering, but call it out in
+channel lock together). Order them like any other issue (below), and call it out in
 the Summary when several WAN metrics move together — that is far stronger evidence
 of a WAN-side fault than any single metric alone.
 
@@ -894,8 +891,11 @@ of a WAN-side fault than any single metric alone.
 
 **Issue ordering:**
 
-- Present issues sorted by `scoreOverall` descending (most significant
-  first). The API already returns them this way.
+- Present issues most user-impacting first — judge by `segment_after_mean` /
+  `segment_after_max` and duration, not by `scoreOverall`. The API returns
+  issues sorted by `scoreOverall`, but `scoreCoverage` scales with how much of
+  the window an event occupied, so a total 5-minute outage can score about the
+  same as a sub-millisecond latency drift lasting hours.
 
 **Summary section:**
 

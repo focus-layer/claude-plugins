@@ -18,7 +18,7 @@ allowed-tools: >
   mcp__sprinter__show_device,
   mcp__sprinter__show_hints,
   mcp__sprinter__find_device,
-  mcp__sprinter__device_presence_history,
+  mcp__sprinter__network_device_events,
   mcp__sprinter__network_port_scan,
   mcp__sprinter__network_tcp_banner,
   mcp__sprinter__network_mdns_probe,
@@ -51,13 +51,11 @@ allowed-tools: >
   mcp__sprinter__ask_user
 ---
 
-> **Output discipline.** Investigate quietly. Do NOT narrate your process to the
-> user — no "let me…", no "now I'll…", no announcing which tools you are loading
-> or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
-> supports several platforms…"). Call tools without describing the act of calling
-> them. Surface only what matters to the user: the findings, the supporting
-> evidence, and the verdict/next step. Keep any interim text minimal.
+> **Output.** Lead with what the user needs: the findings, the evidence behind
+> them, and the verdict or next step. Leave out tool mechanics (which tools you are
+> loading or calling) and background on which platforms Focus Layer supports. On a
+> long investigation, a one-line note on what you are checking next is fine. A blind
+> spot and the reason for it is a finding, not narration — it belongs in the report.
 
 Troubleshoot device $ARGUMENTS
 
@@ -255,9 +253,13 @@ WiFi skill applies it.
 **Presence/roam timeline — "keeps going offline", "drops at night", "was it
 up at 3pm?"** When the complaint is about *intermittency over time* rather than
 the device's state *right now* — it disconnects and reconnects, goes offline on
-a schedule, "worked this morning then stopped", or (Wi-Fi) keeps bouncing
-between access points — call **`device_presence_history`** with the resolved
-`device_id`. `network_ping` only tells you up-or-down *now*; this tool returns
+a schedule, "worked this morning then stopped", (Wi-Fi) keeps bouncing
+between access points, or a laptop "lost its wired connection" — call
+**`network_device_events`** with the resolved `device_id`. Besides presence and
+Wi-Fi events it lists **network adapters attached and detached** (a dock, a
+USB-Ethernet adapter or dongle: which MAC, at which address, and on a dock swap
+which other device took it), so "it was unplugged from its dock at 14:02" is a
+finding you can read, not guess. `network_ping` only tells you up-or-down *now*; this tool returns
 the device's **state-transition timeline** so you can see the pattern. **This is
 also the authoritative answer to "when was this device last online"** — the
 device-state service exists for that question. Read the last `-> offline`
@@ -382,8 +384,8 @@ reference / the no-metrics fallback (which `interface-metrics` handles):
 - `1.3.6.1.2.1.105.1.3.1.1` — pethMainPseTable: **per-device** budget.
   `.2` nominal watts, `.3` oper status (1=on, 2=off, 3=faulty),
   `.4` consumption watts, `.5` usage-alarm threshold (percent).
-- RFC 3621 defines **no per-port wattage object** — per-port power draw
-  requires a vendor MIB. See `docs/mibs/POWER-ETHERNET-MIB`.
+- RFC 3621 (POWER-ETHERNET-MIB) defines **no per-port wattage object** —
+  per-port power draw requires the vendor's private MIB.
 
 ## Step 4: Where does this device sit in the fabric?
 
@@ -442,7 +444,7 @@ This is a read-only correlation step on tools you already have — no new data
 source. The full recipe is in the `when-did-this-start` reference (fetch via the
 `get_reference_doc` MCP tool, `name: when-did-this-start`); the short form:
 
-1. **Pin the onset `T`.** `device_presence_history` on the subject `device_id`
+1. **Pin the onset `T`.** `network_device_events` on the subject `device_id`
    over a generous window — the first `online -> offline` flap or the first
    clustered `roamed`/`disassociated` is the onset (a steady `online -> sleep ->
    online` cycle is healthy power-save, NOT an onset). A flagged
@@ -493,7 +495,7 @@ source. The full recipe is in the `when-did-this-start` reference (fetch via the
    `pt_dhcp` (config change / rogue server — a DHCP change on the gateway just
    before the device dropped is a prime cause), `pt_traceroute` (path change
    upstream), `pt_ping`/`pt_http`/`pt_dns` on the gateway or a shared target
-   (infra-wide, not device-local). Also run `device_presence_history` on the
+   (infra-wide, not device-local). Also run `network_device_events` on the
    **serving AP / gateway** themselves — did one transition `offline` at `T`?
    (DHCP has **no** dedicated history tool — its events surface through
    `network_issues`; do not look for `dhcp_history`. Traceroute does:

@@ -22,20 +22,18 @@ allowed-tools: >
   mcp__sprinter__timeseries_analyze,
   mcp__sprinter__network_issues,
   mcp__sprinter__event_evidence,
-  mcp__sprinter__device_presence_history,
+  mcp__sprinter__network_device_events,
   mcp__sprinter__network_http,
   mcp__sprinter__network_ping
 ---
 
 # Basic Wi-Fi Link Health Check (read-only)
 
-> **Output discipline.** Investigate quietly. Do NOT narrate your process to the
-> user — no "let me…", no "now I'll…", no announcing which tools you are loading
-> or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
-> supports several platforms…"). Call tools without describing the act of calling
-> them. Surface only what matters to the user: the findings, the supporting
-> evidence, and the verdict/next step. Keep any interim text minimal.
+> **Output.** Lead with what the user needs: the findings, the evidence behind
+> them, and the verdict or next step. Leave out tool mechanics (which tools you are
+> loading or calling) and background on which platforms Focus Layer supports. On a
+> long investigation, a one-line note on what you are checking next is fine. A blind
+> spot and the reason for it is a finding, not narration — it belongs in the report.
 
 A general "is this wireless link OK, and if not why" check for a single client.
 This is the **broad** Wi-Fi skill; `diagnose-wifi-roaming` is the **narrow**
@@ -63,7 +61,7 @@ must use the right one for the right job:
 > facts — those are already in VM + evidence, and re-fetching them floods your
 > context with raw JSON you already have. Reaching for the controller API is
 > correct only for a *specific field* that is in neither tier (e.g. UniFi's exact
-> true-dBm backhaul `uplink.signal` — note the SNR-like backhaul *index* IS now a
+> true-dBm backhaul `uplink.signal` — note the SNR-like backhaul *index* is a
 > VM series, `sprinter_wifi_mesh_backhaul_quality_index`, so read that first; the
 > controller is only for the precise dBm figure). In that case fetch just that
 > field and parse the one value out; do not dump the whole response.
@@ -81,7 +79,7 @@ must use the right one for the right job:
 >   fallback when VM looks empty.** It looks like a live reading and is not; that
 >   is exactly what misleads.
 > - **"When was this device last online?" has ONE authoritative answer:
->   `device_presence_history`.** The device-state service was built for exactly
+>   `network_device_events`.** The device-state service was built for exactly
 >   this question — a state machine over ping replies and Wi-Fi association
 >   freshness, with debounce and ghost-association guards. Call it with the
 >   `device_id` and read the last `-> offline` transition (and its reason).
@@ -352,13 +350,7 @@ current ranking.
 blob.** The tool returns the `probeData.timeSeries[]` array with **one entry per
 matched series** — each entry has its own `metricName` (the full label set:
 `device_id`, `client_mac`, `band`, etc.) paired with its own `values`. Read each
-entry as one device and map its value to its labels directly. If you instead see
-**one** `timeSeries` entry whose `values[]` holds *all* the values but whose
-`metricName` is just one device's labels, you are talking to an **older,
-un-redeployed MCP server** (a fixed-server release returns per-series rows); in
-that case the values are still correct and sorted, but the value↔device mapping is
-lost — fall back to identifying the few outliers by pinning their `device_id`
-individually rather than trusting the single collapsed label set.
+entry as one device and map its value to its labels directly.
 
 **Get device names in the SAME query — join, don't loop.** Don't follow the sweep
 with `show_device`/`list_devices` calls to turn `device_id`s into names. There is

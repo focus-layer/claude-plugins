@@ -35,13 +35,11 @@ allowed-tools: >
   mcp__sprinter__ask_user
 ---
 
-> **Output discipline.** Investigate quietly. Do NOT narrate your process to the
-> user — no "let me…", no "now I'll…", no announcing which tools you are loading
-> or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
-> supports several platforms…"). Call tools without describing the act of calling
-> them. Surface only what matters to the user: the findings, the supporting
-> evidence, and the verdict/next step. Keep any interim text minimal.
+> **Output.** Lead with what the user needs: the findings, the evidence behind
+> them, and the verdict or next step. Leave out tool mechanics (which tools you are
+> loading or calling) and background on which platforms Focus Layer supports. On a
+> long investigation, a one-line note on what you are checking next is fine. A blind
+> spot and the reason for it is a finding, not narration — it belongs in the report.
 
 Generate a printer report for $ARGUMENTS
 
@@ -115,8 +113,7 @@ all of them. Resolve in this order:
    **But an IP does not identify a device.** Networks have overlapping IP ranges, so
    an address search can legitimately return several *different* devices on different
    networks — that is not a duplicate. Never pick one: `ask_user` showing
-   **network — vendor — model**. See "An IP address is NOT a device identity" in the
-   plugin CLAUDE.md.
+   **network — vendor — model**.
 2. Else if the prompt names a **network by name** — call **`find_network`** (name
    prefix, across all orgs). A single match resolves the `network_id`.
 3. Else — call **`list_networks`** (spans all orgs; each row carries `tenant_id` +
@@ -172,16 +169,12 @@ Example `ask_user` prompt:
 
 ## Step 3: Data Collection — Prioritized Sources
 
-**CRITICAL RULE: Do NOT use SNMP if IPP succeeds.** IPP provides higher
-quality, more granular data than SNMP for the same data points. If the
-`ipp_printer` tool returns a successful response with supply levels and
-printer status, **skip SNMP entirely** — do not walk any SNMP OIDs for
-"confirmation" or "additional detail". The only exception is input tray
-paper levels, which IPP does not provide.
-
-Before calling any SNMP tool, ask yourself: "Did IPP already give me this
-data?" If yes, do not call SNMP. If you are about to walk multiple SNMP
-OID subtrees after a successful IPP call, **stop — you are doing it wrong.**
+**IPP first; SNMP only as a fallback.** For the same data points IPP is more
+granular than the Printer MIB, so once `ipp_printer` returns supply levels and
+printer status, SNMP adds calls and a second, sometimes conflicting reading
+(see *Handling Missing or Conflicting Data*) without adding information. Do not
+walk SNMP to confirm a successful IPP result. The one exception is input-tray
+paper levels, which IPP may not provide (see the Decision Gate).
 
 The data collection order below is strict. Complete each priority level,
 then evaluate what data is still missing before proceeding to the next.
@@ -517,9 +510,8 @@ Say "HTTP (EWS)" for web interface data. Say "SNMPv2c" if SNMP was used.
 
 ## Appendix: SNMP Reference (Only When IPP Is Unavailable)
 
-**Do not read this section unless IPP failed.** This appendix exists only
-for printers where port 631 is closed or all IPP paths returned errors.
-If IPP succeeded, this entire appendix is irrelevant — go back to Step 4.
+Use this appendix only when IPP was unavailable (port 631 closed or every
+IPP path returned an error) and the web interface gave no supply or status data.
 
 If the device has a `working_channel` field in the `show_device` output,
 SNMP is reachable. Use `snmp_get` and `snmp_walk` with the

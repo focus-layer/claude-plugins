@@ -33,13 +33,11 @@ allowed-tools: >
   mcp__sprinter__ask_user
 ---
 
-> **Output discipline.** Investigate quietly. Do NOT narrate your process to the
-> user — no "let me…", no "now I'll…", no announcing which tools you are loading
-> or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
-> supports several platforms…"). Call tools without describing the act of calling
-> them. Surface only what matters to the user: the findings, the supporting
-> evidence, and the verdict/next step. Keep any interim text minimal.
+> **Output.** Lead with what the user needs: the findings, the evidence behind
+> them, and the verdict or next step. Leave out tool mechanics (which tools you are
+> loading or calling) and background on which platforms Focus Layer supports. On a
+> long investigation, a one-line note on what you are checking next is fine. A blind
+> spot and the reason for it is a finding, not narration — it belongs in the report.
 
 Troubleshoot printer $ARGUMENTS
 
@@ -95,8 +93,7 @@ all of them. Resolve in this order:
    an address search can legitimately return several *different* printers on different
    networks — that is not a duplicate. Never pick one: `ask_user` showing
    **network — vendor — model** (the address is identical in every row and
-   disambiguates nothing). See "An IP address is NOT a device identity" in the plugin
-   CLAUDE.md.
+   disambiguates nothing).
 2. Else if the prompt names a **network by name** — call **`find_network`** (name
    prefix, across all orgs). A single match resolves the `network_id`.
 3. Else — call **`list_networks`** (spans all orgs; each row carries `tenant_id` +

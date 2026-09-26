@@ -23,7 +23,7 @@ allowed-tools: >
   mcp__sprinter__find_device,
   mcp__sprinter__topology_neighbors,
   mcp__sprinter__topology_path,
-  mcp__sprinter__device_presence_history,
+  mcp__sprinter__network_device_events,
   mcp__sprinter__timeseries_instant,
   mcp__sprinter__timeseries_range,
   mcp__sprinter__timeseries_analyze,
@@ -35,13 +35,11 @@ allowed-tools: >
 
 # Diagnose Wi-Fi Roaming / Sticky-Client Problems (read-only)
 
-> **Output discipline.** Investigate quietly. Do NOT narrate your process to the
-> user — no "let me…", no "now I'll…", no announcing which tools you are loading
-> or calling, no step-by-step play-by-play, and no explaining your reasoning or
-> the platform/coverage landscape (e.g. "since this is a UniFi device…", "Focus Layer
-> supports several platforms…"). Call tools without describing the act of calling
-> them. Surface only what matters to the user: the findings, the supporting
-> evidence, and the verdict/next step. Keep any interim text minimal.
+> **Output.** Lead with what the user needs: the findings, the evidence behind
+> them, and the verdict or next step. Leave out tool mechanics (which tools you are
+> loading or calling) and background on which platforms Focus Layer supports. On a
+> long investigation, a one-line note on what you are checking next is fine. A blind
+> spot and the reason for it is a finding, not narration — it belongs in the report.
 
 This skill investigates why a Wi-Fi client has a poor link or won't roam to a
 nearer access point. The platform-neutral link-quality verdict runs on **any**
@@ -67,7 +65,7 @@ the skill branches by platform. Three data sources, each for a different job:
   fine. **Do not read the client's health *values* from evidence** — those
   scalars are frozen at the discovery cadence (a day old on real networks); read
   health from VM.
-- **Mesh backhaul signal is now a live VM series — read it there, not the
+- **Mesh backhaul signal is a live VM series — read it there, not the
   controller.** When a mesh AP is a roam candidate, get its wireless-backhaul RF
   quality from VM keyed by that AP's `device_id`:
   `sprinter_wifi_mesh_backhaul_quality_index{device_id="<AP device_id>"}` on UniFi
@@ -75,7 +73,7 @@ the skill branches by platform. Three data sources, each for a different job:
   `sprinter_wifi_mesh_backhaul_signal_dbm{device_id="..."}` on Luxul (real dBm),
   via `timeseries_instant` / `timeseries_range`. It is emitted even while the AP is
   offline, so a flapping backhaul shows as a trend. Do NOT hit the controller API
-  for it (issue #204 closed that gap).
+  for it.
 - **The live controller API** is touched only for **narrow residual facts** the
   infra service still does not store: the per-SSID min-RSSI *config* value.
   What to avoid is using the controller API as a **bulk data source**: do not GET
@@ -130,21 +128,13 @@ layer is UniFi-bound. The vendor-neutral *analysis* (the
 Experience-vs-link-quality trap and the two min-RSSI failure modes) lives in
 the reference `interpreting-wifi-telemetry` — fetch it with the
 `get_reference_doc` MCP tool (`name: interpreting-wifi-telemetry`).
-The platform keys themselves are enumerated in `wifi-metrics-reference` (step 1);
-the planned path to a richer multi-vendor roaming analysis is
-`diagnose-wifi-roaming-generalization-todo` — fetch it with the
-`get_reference_doc` MCP tool before adding a second controller vendor.
+The platform keys themselves are enumerated in `wifi-metrics-reference` (step 1).
 
 The background reference for *interpreting* the numbers this skill collects is
 `interpreting-wifi-telemetry`. Fetch it with the `get_reference_doc` MCP tool
 (`name: interpreting-wifi-telemetry`) — the "Experience != link quality" trap and
 the "when min-RSSI is the WRONG tool" failure modes are the heart of the
 analysis, and this skill is the automated front end to that doc.
-
-No working-directory check is needed to run this skill. Unlike rule-authoring
-skills, it neither creates nor edits rule files; the diagnosis is pure
-evidence reads plus at most two live controller-API calls. The reference docs
-above are reference reading, not a dependency.
 
 ## What you need before starting
 
@@ -323,7 +313,7 @@ most recent — and most relevant — data.
 Score against the catalog health bands in the reference. This live signal + retry
 rate is what feeds the roaming decision below — **not** the stale evidence scalar.
 
-WiFi series now carry `device_id` and `network_id` stamped at emit (the producer
+WiFi series carry `device_id` and `network_id` stamped at emit (the producer
 resolves the client MAC → `device_id` via the graph), and `network_id` is
 **load-bearing** for the read: the server-side tenant-isolation rewrite matches
 **no** series without it, so always pass the client's `network_id`. Read an empty
@@ -345,7 +335,7 @@ exist.
 **1c — Roam/disassoc event timeline (the direct evidence of *movement*).** The VM
 signal/retry trend tells you the link is *bad*; it does not tell you whether the
 client is actually **roaming, stuck, or flapping**. For that, call
-`device_presence_history` with the client's `device_id` over the same window you
+`network_device_events` with the client's `device_id` over the same window you
 used in 1b. It returns the device's state-transition timeline interleaved with the
 Wi-Fi event stream — each `roamed AP <from_ap> -> <to_ap>` and `disassociated from
 AP <ap>` line is a real, timestamped roam/disassoc, not an inference. Read it
@@ -443,11 +433,11 @@ path through a mesh AP is bounded by its **weakest hop**: a strong
 client→mesh-AP link buys nothing if the mesh AP's backhaul is as weak as (or
 weaker than) the client's current direct link.
 
-**Read the backhaul SNR-like index from VM first** (issue #204):
+**Read the backhaul SNR-like index from VM first:**
 `sprinter_wifi_mesh_backhaul_quality_index{device_id="<mesh AP device_id>"}` via
 `timeseries_instant` / `timeseries_range`. This is UniFi's `uplink.rssi` — the
 same SNR-like index as the evidence `backhaulRssiDbm` (single digits = at the
-noise floor = poor; see the units trap above) — now a live series, so you can see
+noise floor = poor; see the units trap above) — as a live series, so you can see
 whether the backhaul is *degrading over time* and whether it dips exactly when the
 client flaps. Grade it: single digits = poor, teens = fair, 20+ = good. It is
 emitted even while the mesh AP is offline, so a dropped backhaul is visible.
@@ -569,7 +559,7 @@ short form:
 2. **Sweep the client's Wi-Fi dependencies around `T`** (`T ± 15 min`), NOT every
    device on the network:
    - **The serving AP** (`anchorDeviceId`) and any roam-candidate AP — run
-     `device_presence_history` on each: did one go `offline -> online` (an AP
+     `network_device_events` on each: did one go `offline -> online` (an AP
      reboot) at ≈ `T`? An AP bounce re-shuffles every client and looks like a
      roaming storm.
    - **The controller** — a controller-pushed change (SSID edit, band steering,
@@ -617,8 +607,10 @@ tool, `name: interpreting-wifi-telemetry`):
    - **Mesh-backhaul collision:** does any mesh AP (a `MESH_BACKHAUL` hop in the
      graph, or `uplink.type == "WIRELESS"` in the controller summary) use the
      *same serving AP* as the client, on the *same SSID band* a per-SSID floor
-     would cover? Compare the client's `signalDbm` to the backhaul's
-     `backhaulRssiDbm`. If they are close (few dB) or the backhaul is weaker,
+     would cover? Compare the client's live signal (Step 1b, dBm) to the
+     backhaul's true dBm (Step 2a's live `uplink.signal`; `backhaulRssiDbm` and
+     the VM quality index are SNR-like and not comparable to dBm). If they are
+     close (few dB) or the backhaul is weaker,
      **no floor value is safe** — it evicts the backhaul too (symptom: the
      mesh AP goes isolated/re-adopting). Remember a `both`-band SSID floor
      hits the mesh band even when the client and backhaul are on different
@@ -631,7 +623,7 @@ tool, `name: interpreting-wifi-telemetry`):
 4. **Mesh-bottleneck check — would the near AP actually help?** Whenever the
    candidate better AP is a wireless mesh node, decide explicitly whether
    moving the client there improves anything, using the Step 2a backhaul
-   grade. Compare the client's current `signalDbm` to the candidate's
+   grade. Compare the client's live signal (Step 1b) to the candidate's
    backhaul `signal` (true dBm) and rates. If the backhaul is comparable to
    or worse than the client's current direct link, **roaming there does not
    fix the problem** — the traffic still crosses the same weak RF gap, now as
@@ -691,9 +683,7 @@ Give the user: (1) the link-quality verdict with the actual numbers
 topology finding (serving AP name, any mesh backhaul that collides — with the
 backhaul's true signal/rates when a mesh AP was a roam candidate), (3) the
 candidate-fix ledger below, and (4) the recommended action framed as theirs
-to take. Offer to record a novel finding into the `interpreting-wifi-telemetry`
-reference (fetched via the `get_reference_doc` MCP tool) if the case exposes a
-pattern the doc doesn't already cover.
+to take.
 
 ### The candidate-fix ledger (required in the final verdict)
 
