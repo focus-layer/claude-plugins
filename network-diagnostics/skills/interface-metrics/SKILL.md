@@ -148,6 +148,26 @@ faster than more counters. Drill into a flagged issue's supporting evidence with
 A recent jump in `sprinter_system_uptime_seconds` back to near-zero means the
 device rebooted — worth flagging when interfaces look like they "flapped".
 
+**Device link notes (replaced hardware).** When the ISP swaps a modem or an RMA unit arrives,
+the new box is a new device with a new `device_id`, and an operator may record that it
+replaced the old one. Tools then say so:
+- `find_device`, `list_devices` and `show_device` carry a `device_link` field. On the old
+  box it reads `replaced by <new id> at <time>`; on the new box it reads
+  `replaced <old id> (serial ...) at <time>; metrics for <new id> before <time> were copied from <old id>`.
+- The timeseries tools add a `device link: device <new id> replaced ...` note (in
+  `device_link_notes`, or as leading lines) when you query the new box's `device_id`.
+
+What to do with it: use the **new** box's `device_id` for current state and for history.
+When the note says history `were copied`, a query on the new id already covers the time
+before the swap, and a change at `<time>` is the hardware swap, not a fault. When it says
+history `are being copied` instead, the copy is not finished: query the **old** id for the
+time before the swap. Never report the old box as down or missing: it was replaced.
+
+For interfaces specifically: the copied history keeps the old box's interface names and
+`if_index` values, so across the swap time "port N" of the old box and "port N" of the new
+one can appear in one series or as two series. Compare ports by name on each side of
+`<time>`, not across it.
+
 ## Step 3 — Interpret
 
 - **Errors/discards**: a **sustained nonzero rate** is an active problem

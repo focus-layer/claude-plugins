@@ -200,3 +200,17 @@ number into an effect, names one action; see the reference doc for the specimen.
   emits. Query the modem's `device_id`.
 - **An IP is not an identity.** `192.168.100.1` exists on every cable network; always
   carry `network_id`.
+- **Device link notes (replaced hardware).** When the ISP swaps a modem or an RMA unit arrives,
+  the new box is a new device with a new `device_id`, and an operator may record that it
+  replaced the old one. Tools then say so:
+  - `find_device`, `list_devices` and `show_device` carry a `device_link` field. On the old
+    box it reads `replaced by <new id> at <time>`; on the new box it reads
+    `replaced <old id> (serial ...) at <time>; metrics for <new id> before <time> were copied from <old id>`.
+  - The timeseries tools add a `device link: device <new id> replaced ...` note (in
+    `device_link_notes`, or as leading lines) when you query the new box's `device_id`.
+
+  What to do with it: use the **new** box's `device_id` for current state and for history.
+  When the note says history `were copied`, a query on the new id already covers the time
+  before the swap, and a change at `<time>` is the hardware swap, not a fault. When it says
+  history `are being copied` instead, the copy is not finished: query the **old** id for the
+  time before the swap. Never report the old box as down or missing: it was replaced.
