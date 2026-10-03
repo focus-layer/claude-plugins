@@ -81,6 +81,8 @@ or controller configuration.
 | `network-issues-report`    | Report significant network issues over a time range (loss, latency spikes, mean/variance shifts, DHCP changes, rogue DHCP servers).                                                                                                                   |
 | `troubleshoot-printer`     | Check a network printer's status — toner/ink, jams, errors, supply levels, page counts.                                                                                                                                                               |
 | `printer-report`           | Generate a full HTML report on a printer (identity, capabilities, supplies, counters, status).                                                                                                                                                        |
+| `compare-before-after-change` | Did the change help? Pin when a firmware/model/vendor change or a device replacement happened, then compare matched windows either side of it.                                                                                                     |
+| `interpret-optical-margins` | Read a fiber link's optical power and margins, and say whether the budget is healthy.                                                                                                                                                                |
 | `select-network`           | Select or switch the active network for MCP tool calls when a `network_id` is needed.                                                                                                                                                                 |
 
 ### Examples

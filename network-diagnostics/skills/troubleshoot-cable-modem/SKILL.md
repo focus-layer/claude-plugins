@@ -25,6 +25,7 @@ allowed-tools: >
   mcp__sprinter__show_device,
   mcp__sprinter__show_probes,
   mcp__sprinter__network_issues,
+  mcp__sprinter__network_device_events,
   mcp__sprinter__event_evidence,
   mcp__sprinter__issue_chart,
   mcp__sprinter__timeseries_instant,
@@ -214,3 +215,12 @@ number into an effect, names one action; see the reference doc for the specimen.
   before the swap, and a change at `<time>` is the hardware swap, not a fault. When it says
   history `are being copied` instead, the copy is not finished: query the **old** id for the
   time before the swap. Never report the old box as down or missing: it was replaced.
+
+## Hand off when a change explains the window
+
+If `network_device_events` returns a `device_changed`, `replaced_by` or `replaces` row inside
+the window you are analysing — or a device-link hint says "replaced by" / "were copied from" —
+the two halves of that window are not the same device-configuration and must not be read as
+one trend. Hand off to **`compare-before-after-change`** (`Skill`), which pins the change time
+and compares matched windows either side of it. Say which change you found; do not average
+across it.

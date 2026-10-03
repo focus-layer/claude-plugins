@@ -573,3 +573,12 @@ Summarize what you found:
   on the device's infra dependencies around that time (or that the window was
   clean, ruling out infra)
 - Recommendations for next steps or remediation
+
+## Hand off when a change explains the window
+
+If `network_device_events` returns a `device_changed`, `replaced_by` or `replaces` row inside
+the window you are analysing — or a device-link hint says "replaced by" / "were copied from" —
+the two halves of that window are not the same device-configuration and must not be read as
+one trend. Hand off to **`compare-before-after-change`** (`Skill`), which pins the change time
+and compares matched windows either side of it. Say which change you found; do not average
+across it.

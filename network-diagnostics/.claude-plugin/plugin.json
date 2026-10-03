@@ -1,6 +1,6 @@
 {
   "name": "network-diagnostics",
-  "version": "2.7.3100",
+  "version": "2.7.3140",
   "description": "Network device identification and diagnostics using Focus Layer MCP tools",
   "author": {
     "name": "Focus Layer",

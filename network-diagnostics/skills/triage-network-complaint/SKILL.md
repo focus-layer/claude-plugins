@@ -792,3 +792,12 @@ verdict, the layers not checked) → **Next action** (whose move).
   legitimate and *complete* answer. Prefer it over any root cause you cannot
   measure. Never publish a ranked list of indistinguishable causes as if it were a
   diagnosis.
+
+## Hand off when a change explains the window
+
+If `network_device_events` returns a `device_changed`, `replaced_by` or `replaces` row inside
+the window you are analysing — or a device-link hint says "replaced by" / "were copied from" —
+the two halves of that window are not the same device-configuration and must not be read as
+one trend. Hand off to **`compare-before-after-change`** (`Skill`), which pins the change time
+and compares matched windows either side of it. Say which change you found; do not average
+across it.

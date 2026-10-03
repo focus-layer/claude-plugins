@@ -14,7 +14,7 @@ description: >
   time-series is read.
 argument-hint: "[network-name] [time-range]"
 allowed-tools: >
-  Bash, Read, Write, Grep, Glob, WebSearch,
+  Bash, Skill, Read, Write, Grep, Glob, WebSearch,
   mcp__sprinter__list_networks,
   mcp__sprinter__find_network,
   mcp__sprinter__show_network,
@@ -22,6 +22,7 @@ allowed-tools: >
   mcp__sprinter__find_device,
   mcp__sprinter__show_device,
   mcp__sprinter__network_issues,
+  mcp__sprinter__network_device_events,
   mcp__sprinter__event_evidence,
   mcp__sprinter__show_probes,
   mcp__sprinter__ask_user,
@@ -261,6 +262,9 @@ The response includes:
   timezone (RFC3339)
 - Per-issue `startUnixMs`, `endUnixMs` — issue times as Unix ms (use these
   for `issue_chart` overlay params)
+
+If `display_timezone` is omitted, the `*Local` fields default to the network's
+configured timezone (not UTC).
 
 **Use `*Local` fields for display text and `*UnixMs` fields for tool
 calls.** Do not convert timestamps yourself.
@@ -507,6 +511,9 @@ issue_chart(
 )
 ```
 
+If `timezone` is omitted, the chart defaults to the network's configured
+timezone (not UTC); the X-axis label names the zone used.
+
 The response JSON contains a `chart.src` field with a base64 SVG data URI.
 Save each chart's `src` value for embedding in the HTML report.
 
@@ -678,8 +685,8 @@ Use this HTML structure:
 
 **Timestamps:**
 
-- **Use the pre-converted `*Local` fields** from the `network_issues`
-  response. These are already in the display timezone (RFC3339 format like
+- **Use the pre-converted `*Local` fields** from the `network_issues` and
+  `event_evidence` responses. These are already in the display timezone (RFC3339 format like
   `2026-04-07T11:53:00-07:00`). Reformat them for display (e.g.
   "Apr 7 11:53 AM") — this is string reformatting, not timezone math.
 - **Do not convert UTC timestamps yourself.** The server has already done
@@ -932,3 +939,12 @@ user:
 
 > Google Drive upload is available in Claude Cowork. I've saved the file
 > locally to {path} — you can upload it manually.
+
+## Hand off when a change explains the window
+
+If `network_device_events` returns a `device_changed`, `replaced_by` or `replaces` row inside
+the window you are analysing — or a device-link hint says "replaced by" / "were copied from" —
+the two halves of that window are not the same device-configuration and must not be read as
+one trend. Hand off to **`compare-before-after-change`** (`Skill`), which pins the change time
+and compares matched windows either side of it. Say which change you found; do not average
+across it.

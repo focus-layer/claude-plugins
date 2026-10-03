@@ -20,6 +20,7 @@ allowed-tools: >
   mcp__sprinter__timeseries_analyze,
   mcp__sprinter__timeseries_instant,
   mcp__sprinter__network_issues,
+  mcp__sprinter__network_device_events,
   mcp__sprinter__event_evidence,
   mcp__sprinter__snmp_get,
   mcp__sprinter__get_reference_doc,
@@ -222,3 +223,12 @@ speed, link state) so the caller can fold it into its own report. Callers:
 `locate-device-uplink` (grade the attachment port once located),
 `troubleshoot-device` (device/interface health), `diagnose-wifi-roaming`
 (grade a mesh AP's wired uplink port).
+
+## Hand off when a change explains the window
+
+If `network_device_events` returns a `device_changed`, `replaced_by` or `replaces` row inside
+the window you are analysing — or a device-link hint says "replaced by" / "were copied from" —
+the two halves of that window are not the same device-configuration and must not be read as
+one trend. Hand off to **`compare-before-after-change`** (`Skill`), which pins the change time
+and compares matched windows either side of it. Say which change you found; do not average
+across it.
